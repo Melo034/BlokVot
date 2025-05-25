@@ -287,12 +287,16 @@ const Polls = () => {
                                 </AlertDescription>
                             </Alert>
                         </CardContent>
-                        <CardFooter className="flex justify-between">
-                            <Button variant="outline" onClick={handleBack}>
+                        <CardFooter className="flex flex-wrap justify-between gap-2 sm:flex-nowrap">
+                            <Button variant="outline" onClick={handleBack} className="flex-1 sm:flex-none">
                                 <ChevronLeft className="h-4 w-4 mr-1" />
                                 Change Selection
                             </Button>
-                            <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-primary/90 hover:bg-primary">
+                            <Button
+                                onClick={handleSubmit}
+                                disabled={isSubmitting}
+                                className="bg-primary/90 hover:bg-primary flex-1 sm:flex-none"
+                            >
                                 {isSubmitting ? (
                                     <div className="flex items-center gap-2">
                                         <span>Recording Vote</span>
@@ -396,7 +400,7 @@ const Polls = () => {
                     </DialogContent>
                 )}
             </Dialog>
-            <Footer/>
+            <Footer />
         </div>
     )
 }
