@@ -28,8 +28,8 @@ const HowItWorks = () => {
                             <div className="md:text-right flex flex-col justify-center order-2 md:order-1">
                                 <h3 className="text-2xl font-bold text-primary mb-2">Voter Authentication</h3>
                                 <p className="text-neutral-400">
-                                    Voters verify their identity using secure multi-factor authentication methods, including biometric
-                                    verification where available.
+                                    Voters authenticate their identity using secure method by wallet address connection and
+                                    verification, ensuring only eligible voters can participate. 
                                 </p>
                             </div>
                             <div className="flex justify-center md:justify-start order-1 md:order-2">
