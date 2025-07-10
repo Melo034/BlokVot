@@ -30,10 +30,10 @@ const Footer = ({
     ],
 }: Footer2Props) => {
     return (
-        <section className="mt-16 bg-neutral-100">
+        <section className="mt-16 bg-neutral-900">
             <div>
                 <footer>
-                    <div className="py-10 mt-24 px-10 flex flex-col justify-between gap-4 border-t  text-sm font-medium text-muted-foreground md:flex-row md:items-center">
+                    <div className="py-10 mt-24 px-10 flex  flex-col justify-between gap-4 border-t border-neutral-600 text-sm font-medium text-white md:flex-row md:items-center">
                         <p>{copyright}</p>
                         <ul className="flex gap-4">
                             {bottomLinks.map((link, linkIdx) => (

@@ -1,261 +1,279 @@
-import { Menu, ChevronRight, MessageCircleQuestion } from "lucide-react";
+import { useReadContract } from "thirdweb/react";
+import { ConnectButton, useActiveAccount } from "thirdweb/react";
+import { darkTheme } from "thirdweb/react";
+import { client, contract } from "@/client";
+import { Menu } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator"
 import {
-    NavigationMenu,
-    NavigationMenuContent,
-    NavigationMenuItem,
-    NavigationMenuLink,
-    NavigationMenuList,
-    NavigationMenuTrigger,
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
 } from "@/components/ui/sheet";
-import Userprofile from "./Userprofile";
-import Logo from "../../assets/blockchain_logo.png"
-
+import Logo from "../../assets/blockchain_logo.png";
 
 interface MenuItem {
-    title: string;
-    url: string;
-    description?: string;
-    icon?: React.ReactNode;
-    items?: MenuItem[];
+  title: string;
+  url: string;
+  description?: string;
+  icon?: React.ReactNode;
+  items?: MenuItem[];
 }
 
 interface NavbarProps {
-    logo?: {
-        url: string;
-        src: string;
-        alt: string;
+  logo?: {
+    url: string;
+    src: string;
+    alt: string;
+  };
+  menu?: MenuItem[];
+  mobileExtraLinks?: {
+    name: string;
+    url: string;
+  }[];
+  Dashboard?: {
+    login: {
+      text: string;
+      url: string;
     };
-    menu?: MenuItem[];
-    mobileExtraLinks?: {
-        name: string;
-        url: string;
-    }[];
-    auth?: {
-        login: {
-            text: string;
-            url: string;
-        };
-        startcampaign: {
-            text: string;
-            url: string;
-        };
-    };
+  };
 }
 
-
 const Navbar = ({
-    logo = {
-        url: "/",
-        src: Logo,
-        alt: "logo",
+  logo = {
+    url: "/",
+    src: Logo,
+    alt: "logo",
+  },
+  menu = [
+    {
+      title: "Results",
+      url: "/results",
     },
-    menu = [
-        {
-            title: "Results",
-            url: "/results",
-
-        },
-        {
-            title: "About",
-            url: "#",
-            items: [
-                {
-                    title: "How it works",
-                    description: "Step-by-step help, examples, and more",
-                    icon: <MessageCircleQuestion className="size-5 shrink-0" />,
-                    url: "/how-it-works",
-                },
-            ],
-        },
-    ],
-    auth = {
-        login: { text: "Log in", url: "/auth/login" },
-        startcampaign: { text: "Cast your vote", url: "/auth/login" },
+    {
+      title: "How it works",
+      url: "/how-it-works",
     },
+  ],
+  Dashboard = {
+    login: { text: "Admin Dashboard", url: "/admin-dashboard" },
+  },
 }: NavbarProps) => {
-    const [hasScrolled, setHasScrolled] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
+  const account = useActiveAccount();
+  const addr = account?.address; // Safely access address, will be undefined if no account
 
-    useEffect(() => {
-        const handleScroll = () => {
-            setHasScrolled(window.scrollY > 20);
-        };
+  const { data: isSuperAdmin, isPending: isSuperAdminPending } = useReadContract({
+    contract,
+    method: "function isSuperAdmin(address addr) view returns (bool)",
+    params: [addr!], // Non-null assertion since query is disabled when addr is undefined
+    queryOptions: {
+      enabled: !!addr, 
+    },
+  });
 
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
-    return (
-        <section className={`py-4 sticky top-0 z-40 w-full bg-white transition-all ${hasScrolled ? "border-b border-gray-100 shadow-sm" : "border-b-0"
-            }`}>
-            <div className="container max-w-screen-xl px-5 mx-auto">
-                {/* Desktop Menu */}
-                <nav className="hidden justify-between lg:flex">
-                    <div className="flex items-center gap-6">
-                        <a href={logo.url} className="flex items-center gap-2">
-                            <img src={logo.src} className="w-32 h-12 object-contain" alt={logo.alt} />
-                        </a>
-                        <div className="flex items-center font-serif text-neutral-900">
-                            <NavigationMenu>
-                                <NavigationMenuList>
-                                    {menu.map((item) => renderMenuItem(item))}
-                                </NavigationMenuList>
-                            </NavigationMenu>
-                        </div>
-                    </div>
-                    <div className="flex gap-2 font-pt-serif">
-                        <Button asChild variant="outline" size="sm">
-                            <a href={auth.login.url}>{auth.login.text}</a>
-                        </Button>
-                        <Button asChild size="sm">
-                            <a href={auth.startcampaign.url}>{auth.startcampaign.text}</a>
-                        </Button>
-                        <Userprofile />
-                    </div>
-                </nav>
-                {/* Mobile Menu */}
-                <div className="block lg:hidden">
-                    <div className="flex items-center justify-between">
-                        <a href={logo.url} className="flex items-center gap-2">
-                            <img src={logo.src} className="w-32 h-12 object-contain" alt={logo.alt} />
-                        </a>
-                        <Sheet>
-                            <SheetTrigger asChild>
-                                <Button variant="outline" size="icon">
-                                    <Menu className="size-4" />
-                                </Button>
-                            </SheetTrigger>
-                            <SheetContent className="overflow-y-auto">
-                                <SheetHeader>
-                                    <SheetTitle>
-                                        <a href={logo.url} className="flex items-center gap-2">
-                                            <img src={logo.src} className="w-32 h-12 object-contain" alt={logo.alt} />
-                                        </a>
-                                    </SheetTitle>
-                                </SheetHeader>
-                                <Card className="border-none shadow-none">
-                                    <CardContent className="flex flex-col items-center text-center">
-                                        <Avatar className="w-20 h-20">
-                                            <AvatarImage src="/path-to-image.jpg" alt="Joseph Melvin Kanu" />
-                                            <AvatarFallback>JM</AvatarFallback>
-                                        </Avatar>
-                                        <h2 className="mt-2 text-sm sm:text-lg font-Lora font-semibold">Joseph Melvin Kanu</h2>
-                                        <a href="/my-profile"><Button variant="link" >Profile <ChevronRight size={16} /></Button></a>
-                                    </CardContent>
-                                </Card>
-                                <Separator />
-                                <div className="flex flex-col gap-6 p-4">
-                                    <Accordion
-                                        type="single"
-                                        collapsible
-                                        className="flex w-full flex-col gap-4"
-                                    >
-                                        {menu.map((item) => renderMobileMenuItem(item))}
-                                    </Accordion>
+  const { data: isAdmin, isPending: isAdminPending } = useReadContract({
+    contract,
+    method: "function isAdmin(address addr) view returns (bool)",
+    params: [addr!], // Non-null assertion since query is disabled when addr is undefined
+    queryOptions: {
+      enabled: !!addr, 
+    },
+  });
 
-                                    <div className="flex flex-col gap-3">
-                                        <Button asChild variant="outline">
-                                            <a href={auth.login.url}>{auth.login.text}</a>
-                                        </Button>
-                                        <Button asChild>
-                                            <a href={auth.startcampaign.url}>{auth.startcampaign.text}</a>
-                                        </Button>
-                                    </div>
-                                </div>
-                            </SheetContent>
-                        </Sheet>
-                    </div>
-                </div>
+  useEffect(() => {
+    const handleScroll = () => {
+      setHasScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Show dashboard button only if user is admin or superadmin and address is defined
+  const showDashboardButton =
+    addr && !isSuperAdminPending && !isAdminPending && (isSuperAdmin || isAdmin);
+
+  return (
+    <section
+      className={`py-4 sticky top-0 z-40 w-full bg-neutral-950 transition-all ${
+        hasScrolled ? "border-b border-neutral-600 shadow-sm" : "border-b-0"
+      }`}
+    >
+      <div className="container max-w-screen-xl px-5 mx-auto">
+        {/* Desktop Menu */}
+        <nav className="hidden justify-between lg:flex">
+          <div className="flex items-center gap-6">
+            <a href={logo.url} className="flex items-center gap-2">
+              <img src={logo.src} className="w-32 h-12 object-contain" alt={logo.alt} />
+            </a>
+            <div className="flex items-center font-serif">
+              <NavigationMenu>
+                <NavigationMenuList>{menu.map((item) => renderMenuItem(item))}</NavigationMenuList>
+              </NavigationMenu>
             </div>
-        </section>
-    );
+          </div>
+          <div className="flex gap-3 font-pt-serif">
+            {showDashboardButton && (
+              <Button className="py-6 px-3 text-sm font-semibold">
+                <a href={Dashboard.login.url}>{Dashboard.login.text}</a>
+              </Button>
+            )}
+            <ConnectButton
+              client={client}
+              theme={darkTheme({
+                colors: {
+                  accentText: "hsl(216, 100%, 60%)",
+                  borderColor: "hsl(229, 11.70%, 64.90%)",
+                  primaryText: "hsl(240, 100.00%, 97.50%)",
+                  secondaryIconColor: "hsl(251, 4%, 50%)",
+                },
+              })}
+              appMetadata={{
+                name: "Example app",
+                url: "https://example.com",
+              }}
+            />
+          </div>
+        </nav>
+        {/* Mobile Menu */}
+        <div className="block lg:hidden bg-neutral-950">
+          <div className="flex items-center justify-between">
+            <a href={logo.url} className="flex items-center gap-2">
+              <img src={logo.src} className="w-32 h-12 object-contain" alt={logo.alt} />
+            </a>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="size-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>
+                    <a href={logo.url} className="flex items-center gap-2">
+                      <img src={logo.src} className="w-32 h-12 object-contain" alt={logo.alt} />
+                    </a>
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-6 p-4">
+                  <Accordion type="single" collapsible className="flex w-full flex-col gap-4">
+                    {menu.map((item) => renderMobileMenuItem(item))}
+                  </Accordion>
+                  <div className="flex flex-col gap-3">
+                    {showDashboardButton && (
+                      <Button className="py-6 px-2 text-sm font-semibold">
+                        <a href={Dashboard.login.url}>{Dashboard.login.text}</a>
+                      </Button>
+                    )}
+                    <ConnectButton
+                      client={client}
+                      theme={darkTheme({
+                        colors: {
+                          accentText: "hsl(216, 100%, 60%)",
+                          borderColor: "hsl(229, 13%, 17%)",
+                          primaryText: "hsl(240, 6%, 94%)",
+                          secondaryIconColor: "hsl(251, 4%, 50%)",
+                        },
+                      })}
+                      appMetadata={{
+                        name: "Example app",
+                        url: "https://example.com",
+                      }}
+                    />
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 };
 
+// renderMenuItem and renderMobileMenuItem functions remain unchanged
 const renderMenuItem = (item: MenuItem) => {
-    if (item.items) {
-        return (
-            <NavigationMenuItem key={item.title} className="text-muted-foreground">
-                <NavigationMenuTrigger>{item.title}</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                    <div className="grid w-[100px] gap-2 p-4 md:w-[200px] lg:w-[300px]">
-                        {item.items.map((subItem) => (
-                            <NavigationMenuLink asChild key={subItem.title} className="w-80">
-                                <SubMenuLink item={subItem} />
-                            </NavigationMenuLink>
-                        ))}
-                    </div>
-                </NavigationMenuContent>
-            </NavigationMenuItem>
-        );
-    }
-
+  if (item.items) {
     return (
-        <a
-            key={item.title}
-            className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-accent-foreground"
-            href={item.url}
-        >
-            {item.title}
-        </a>
+      <NavigationMenuItem key={item.title}>
+        <NavigationMenuTrigger>{item.title}</NavigationMenuTrigger>
+        <NavigationMenuContent>
+          <div className="grid w-[100px] gap-2 p-4 md:w-[200px] lg:w-[300px]">
+            {item.items.map((subItem) => (
+              <NavigationMenuLink asChild key={subItem.title} className="w-80">
+                <SubMenuLink item={subItem} />
+              </NavigationMenuLink>
+            ))}
+          </div>
+        </NavigationMenuContent>
+      </NavigationMenuItem>
     );
+  }
+
+  return (
+    <a
+      key={item.title}
+      className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-white transition-colors hover:text-primary"
+      href={item.url}
+    >
+      {item.title}
+    </a>
+  );
 };
 
 const renderMobileMenuItem = (item: MenuItem) => {
-    if (item.items) {
-        return (
-            <AccordionItem key={item.title} value={item.title} className="border-b-0">
-                <AccordionTrigger className="text-md py-0 font-semibold hover:no-underline">
-                    {item.title}
-                </AccordionTrigger>
-                <AccordionContent className="mt-2">
-                    {item.items.map((subItem) => (
-                        <SubMenuLink key={subItem.title} item={subItem} />
-                    ))}
-                </AccordionContent>
-            </AccordionItem>
-        );
-    }
-
+  if (item.items) {
     return (
-        <a key={item.title} href={item.url} className="text-md font-semibold">
-            {item.title}
-        </a>
+      <AccordionItem key={item.title} value={item.title} className="border-b-0">
+        <AccordionTrigger className="text-md py-0 font-semibold hover:no-underline">
+          {item.title}
+        </AccordionTrigger>
+        <AccordionContent className="mt-2">
+          {item.items.map((subItem) => (
+            <SubMenuLink key={subItem.title} item={subItem} />
+          ))}
+        </AccordionContent>
+      </AccordionItem>
     );
+  }
+
+  return (
+    <a key={item.title} href={item.url} className="text-md font-semibold">
+      {item.title}
+    </a>
+  );
 };
 
 const SubMenuLink = ({ item }: { item: MenuItem }) => {
-    return (
-        <a
-            className="flex flex-row gap-4 rounded-md p-3 leading-none no-underline transition-colors outline-none select-none hover:bg-muted hover:text-accent-foreground"
-            href={item.url}
-        >
-            <div>{item.icon}</div>
-            <div>
-                <div className="text-sm font-semibold">{item.title}</div>
-                {item.description && (
-                    <p className="text-sm leading-snug text-muted-foreground">
-                        {item.description}
-                    </p>
-                )}
-            </div>
-        </a>
-    );
+  return (
+    <a
+      className="flex flex-row gap-4 text-white rounded-md p-3 leading-none no-underline transition-colors bg-neutral-950 outline-none select-none"
+      href={item.url}
+    >
+      <div>{item.icon}</div>
+      <div>
+        <div className="text-sm font-semibold">{item.title}</div>
+        {item.description && <p className="text-sm leading-snug">{item.description}</p>}
+      </div>
+    </a>
+  );
 };
 
 export { Navbar };

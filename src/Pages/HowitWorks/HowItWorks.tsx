@@ -5,15 +5,15 @@ import { User, Vote, Shield, CheckCircle } from "lucide-react"
 
 const HowItWorks = () => {
     return (
-        <div>
+        <div className="flex flex-col min-h-screen bg-neutral-900">
             <Navbar />
             <div className="container py-16 sm:py-20 px-4 md:px-6">
                 <div className="flex flex-col items-center justify-center space-y-4 text-center">
                     <div className="space-y-2">
-                        <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-primary">
+                        <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-white">
                             How BlokVot Works
                         </h2>
-                        <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                        <p className="max-w-[900px] text-neutral-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                             Our blockchain voting system follows a simple but secure process to ensure election integrity.
                         </p>
                     </div>
@@ -27,7 +27,7 @@ const HowItWorks = () => {
                         <div className="relative grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
                             <div className="md:text-right flex flex-col justify-center order-2 md:order-1">
                                 <h3 className="text-2xl font-bold text-primary mb-2">Voter Authentication</h3>
-                                <p className="text-gray-600">
+                                <p className="text-neutral-400">
                                     Voters verify their identity using secure multi-factor authentication methods, including biometric
                                     verification where available.
                                 </p>
@@ -54,7 +54,7 @@ const HowItWorks = () => {
                             </div>
                             <div className="flex flex-col justify-center">
                                 <h3 className="text-2xl font-bold text-primary mb-2">Cast Ballot</h3>
-                                <p className="text-gray-600">
+                                <p className="text-neutral-400">
                                     Voters make their candidate selection through a simple and intuitive interface, with one vote allowed per
                                     poll.
                                 </p>
@@ -65,7 +65,7 @@ const HowItWorks = () => {
                         <div className="relative grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
                             <div className="md:text-right flex flex-col justify-center order-2 md:order-1">
                                 <h3 className="text-2xl font-bold text-primary mb-2">Blockchain Recording</h3>
-                                <p className="text-gray-600">
+                                <p className="text-neutral-400">
                                     Votes are encrypted and recorded on the blockchain, creating an immutable record that cannot be altered or
                                     deleted.
                                 </p>
@@ -92,7 +92,7 @@ const HowItWorks = () => {
                             </div>
                             <div className="flex flex-col justify-center">
                                 <h3 className="text-2xl font-bold text-primary mb-2">Vote Verification</h3>
-                                <p className="text-gray-600">
+                                <p className="text-neutral-400">
                                     Voters can verify their vote has been properly recorded while maintaining anonymity, using a unique
                                     verification code.
                                 </p>
