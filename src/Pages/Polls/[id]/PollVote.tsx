@@ -259,7 +259,7 @@ export const PollVote = () => {
                         <Loading />
                     </div>
                 ) : !poll ? (
-                    <Card className="text-center p-8 bg-neutral-800 border-neutral-700">
+                    <Card className="text-center p-8 border-neutral-700/50 bg-gradient-to-br from-neutral-800/80 via-neutral-900 to-black shadow-lg shadow-black/30">
                         <CardContent className="pt-6">
                             <div className="flex flex-col items-center justify-center space-y-4">
                                 <AlertCircle className="h-12 w-12 text-neutral-500/50" />

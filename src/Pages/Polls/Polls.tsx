@@ -326,7 +326,7 @@ export const Polls = () => {
                         {filteredPolls.map((poll) => {
                             const { remaining, untilStart } = getTimeDisplay(poll.startTime, poll.endTime, poll.status);
                             return (
-                                <Card key={poll.id} className="overflow-hidden bg-neutral-800 border-neutral-700">
+                                <Card key={poll.id} className="overflow-hidden border-neutral-700/50 bg-gradient-to-br from-neutral-800/80 via-neutral-900 to-black shadow-lg shadow-black/30">
                                     <CardHeader className="pb-3">
                                         <div className="flex justify-between items-start">
                                             <CardTitle className="text-xl text-white font-lora">{poll.title}</CardTitle>
