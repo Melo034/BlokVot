@@ -291,7 +291,11 @@ export const Polls = () => {
                         <CardContent className="pt-6">
                             <div className="flex flex-col items-center justify-center space-y-4">
                                 <Vote className="h-12 w-12 text-neutral-500/50 animate-pulse" />
-                                <p className="text-neutral-500"><Loading/>Loading available polls...</p>
+                                <div className="flex flex-col items-center space-y-3">
+                                    <Loading />
+                                    <p className="text-neutral-500">Loading poll results...</p>
+                                </div>
+
                             </div>
                         </CardContent>
                     </Card>

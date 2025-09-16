@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type JSX  } from "react";
+import { useState, useEffect, useMemo, type JSX } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useReadContract, useActiveAccount } from "thirdweb/react";
 import { prepareContractCall } from "thirdweb";
@@ -34,6 +34,7 @@ import { Navbar } from "@/components/utils/Navbar";
 import { Footer } from "@/components/utils/Footer";
 import Loading from "@/components/utils/Loading";
 import type { Poll } from "@/types";
+import { getDerivedPollStatus } from "@/lib/poll-status";
 
 // Define Candidate type based on getCandidateDetailsForPoll
 interface Candidate {
@@ -128,9 +129,9 @@ export const PollVote = () => {
     // Memoize poll object
     const poll = useMemo<Poll | null>(() => {
         if (!pollData || isPollPending || pollError) return null;
-        const now = Date.now() / 1000;
         const startTime = Number(pollData[3]);
         const endTime = Number(pollData[4]);
+        const contractStatus = Number(pollData[5]);
         return {
             id: pollData[0].toString(),
             title: pollData[1],
@@ -139,8 +140,8 @@ export const PollVote = () => {
             endTime,
             startDate: new Date(startTime * 1000).toISOString(),
             endDate: new Date(endTime * 1000).toISOString(),
-            contractStatus: Number(pollData[5]),
-            status: now >= endTime ? "ended" : now >= startTime ? "active" : "upcoming",
+            contractStatus,
+            status: getDerivedPollStatus(startTime, endTime, contractStatus),
             totalVotes: Number(pollData[6]),
             candidateCount: Number(pollData[7]),
             createdTime: startTime,

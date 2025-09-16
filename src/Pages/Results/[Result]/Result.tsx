@@ -45,7 +45,7 @@ const toNumber = (value: number | bigint): number => (typeof value === "bigint" 
 
 const formatPlural = (count: number | bigint, singular: string, plural?: string): string => {
     const numeric = Math.abs(toNumber(count));
-    const label = numeric === 1 ? singular : plural ?? `${singular}s`;
+    const label = numeric <= 1 ? singular : plural ?? `${singular}s`;
     return label;
 };
 
@@ -367,7 +367,10 @@ export const Result = () => {
                         <CardContent className="pt-6">
                             <div className="flex flex-col items-center justify-center space-y-4">
                                 <Vote className="h-12 w-12 text-neutral-500/50 animate-pulse" />
-                                <p className="text-neutral-500"><Loading/>Loading poll results...</p>
+                                <div className="flex flex-col items-center space-y-3">
+                                    <Loading />
+                                    <p className="text-neutral-500">Loading poll results...</p>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -743,8 +746,8 @@ export const Result = () => {
                                                 <CardTitle className="flex items-center gap-2 font-lora">
                                                     <FileBarChart className="h-5 w-5" />
                                                     Result Overview
-                                            </CardTitle>
-                                            <CardDescription className="text-neutral-400">Top performing candidates visualized</CardDescription>
+                                                </CardTitle>
+                                                <CardDescription className="text-neutral-400">Top performing candidates visualized</CardDescription>
                                             </CardHeader>
                                             <CardContent>
                                                 <div className="h-72 w-full">

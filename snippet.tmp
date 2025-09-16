@@ -1,0 +1,40 @@
+import { useState, useEffect, useMemo, type JSX } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useReadContract } from "thirdweb/react";
+import { contract } from "@/client";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
+import {
+    Clock,
+    Download,
+    FileBarChart,
+    CheckCircle,
+    ShieldCheck,
+    Vote,
+    ArrowLeft,
+    Share,
+    Calendar,
+    TrendingUp,
+} from "lucide-react";
+import { Navbar } from "@/components/utils/Navbar";
+import { Footer } from "@/components/utils/Footer";
+import type { Poll, Candidate, PollAnalytics } from "@/types";
+import Loading from "@/components/utils/Loading";
+import { getDerivedPollStatus } from "@/lib/poll-status";
+import {
+    ResponsiveContainer,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    AreaChart,
+    Area,
+} from "recharts";
+
+// Helper function to resolve IPFS URLs

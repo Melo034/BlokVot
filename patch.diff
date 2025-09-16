@@ -1,0 +1,22 @@
+*** Begin Patch
+*** Update File: src/Pages/Results/Results.tsx
+@@
+-import { toNumber, formatPlural, formatCountLabel, formatCompactNumber } from "@/lib/text";
++const toNumber = (value: number | bigint): number => (typeof value === "bigint" ? Number(value) : value);
++
++const formatPlural = (count: number | bigint, singular: string, plural?: string): string => {
++    const numeric = Math.abs(toNumber(count));
++    const label = numeric === 1 ? singular : plural ?? `${singular}s`;
++    return label;
++};
++
++const formatCountLabel = (count: number | bigint, singular: string, plural?: string): string => {
++    const numeric = toNumber(count);
++    return `${numeric.toLocaleString()} ${formatPlural(numeric, singular, plural)}`;
++};
++
++const formatCompactNumber = (value: number | bigint): string => {
++    const numeric = toNumber(value);
++    return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(numeric);
++};
+*** End Patch

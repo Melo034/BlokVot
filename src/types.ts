@@ -15,6 +15,8 @@ export interface Poll {
   createdTime: number;
   isEligible: boolean;
   hasVoted: boolean;
+  minVotersRequired?: number;
+  durationSeconds?: number;
 }
 
 export interface Candidate {
@@ -32,10 +34,10 @@ export interface Candidate {
 
 export interface PollAnalytics {
   totalVotes: number;
-  participationRate: number;
+  participationRate?: number;
   avgVotesPerHour: number;
-  peakVotingHour: string;
-  hourlyVotingPattern: { hour: string; votes: number }[];
+  peakVotingLabel: string;
+  hourlyVotingPattern: { label: string; votes: number }[];
 }
 
 export const PollStatus = {
