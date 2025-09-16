@@ -1,4 +1,4 @@
-import React, { useState, useEffect, type JSX } from "react";
+import React, { useState, useEffect, useCallback, type JSX } from "react";
 import { useNavigate } from "react-router-dom";
 import { useReadContract, useActiveAccount } from "thirdweb/react";
 import { contract } from "@/client";
@@ -21,6 +21,7 @@ import { Navbar } from "@/components/utils/Navbar";
 import { Footer } from "@/components/utils/Footer";
 import type { Poll } from "@/types";
 import Loading from "@/components/utils/Loading";
+import { getDerivedPollStatus } from "@/lib/poll-status";
 
 // Helper function to format timestamp to locale string
 const formatDateTime = (timestamp: number): string => {
@@ -87,6 +88,9 @@ const PollItem = ({
         method:
             "function getPoll(uint256 pollId) view returns (uint256 id, string title, string description, uint256 startTime, uint256 endTime, uint8 status, uint256 totalVotes, uint256 candidateCountOut, uint256 minVotersRequired)",
         params: [BigInt(pollId)],
+        queryOptions: {
+            refetchInterval: 15000,
+        },
     });
 
     const { data: hasVotedData } = useReadContract({
@@ -112,11 +116,11 @@ const PollItem = ({
         }
 
         if (pollData && !isPending) {
-            const now = Date.now() / 1000;
             const startTime = Number(pollData[3]);
             const endTime = Number(pollData[4]);
 
-            const status: Poll["status"] = now >= endTime ? "ended" : now >= startTime ? "active" : "upcoming";
+            const contractStatus = Number(pollData[5]);
+            const status = getDerivedPollStatus(startTime, endTime, contractStatus);
 
             const poll: Poll = {
                 id: pollData[0].toString(),
@@ -126,19 +130,30 @@ const PollItem = ({
                 endTime,
                 startDate: new Date(startTime * 1000).toISOString(),
                 endDate: new Date(endTime * 1000).toISOString(),
-                contractStatus: Number(pollData[5]),
+                contractStatus,
                 status,
                 totalVotes: Number(pollData[6]),
                 candidateCount: Number(pollData[7]),
                 createdTime: startTime,
                 hasVoted: hasVotedData ?? false,
                 isEligible: isEligibleToVote ?? false,
+                minVotersRequired: Number(pollData[8] ?? 0) || undefined,
+                durationSeconds: Math.max(0, endTime - startTime),
             };
 
             setPolls((prevPolls) => {
-                const exists = prevPolls.some((p) => p.id === poll.id);
-                if (exists) return prevPolls;
-                return [...prevPolls, poll].sort((a, b) => Number(a.id) - Number(b.id));
+                const existingIndex = prevPolls.findIndex((p) => p.id === poll.id);
+                if (existingIndex >= 0) {
+                    const nextPolls = [...prevPolls];
+                    nextPolls[existingIndex] = {
+                        ...nextPolls[existingIndex],
+                        ...poll,
+                        status: getDerivedPollStatus(poll.startTime, poll.endTime, poll.contractStatus),
+                    };
+                    return nextPolls;
+                }
+                return [...prevPolls, poll]
+                    .sort((a, b) => Number(a.id) - Number(b.id));
             });
 
             setLoadedPollIds((prev) => new Set([...prev, pollId]));
@@ -155,6 +170,30 @@ export const Polls = () => {
     const [polls, setPolls] = useState<Poll[]>([]);
     const [loadedPollIds, setLoadedPollIds] = useState<Set<number>>(new Set());
     const [activeTab, setActiveTab] = useState<"all" | "active" | "upcoming" | "completed">("all");
+    const refreshPollStatuses = useCallback(() => {
+        setPolls((prevPolls) => {
+            let changed = false;
+            const nextPolls = prevPolls.map((poll) => {
+                const nextStatus = getDerivedPollStatus(poll.startTime, poll.endTime, poll.contractStatus);
+                if (nextStatus !== poll.status) {
+                    changed = true;
+                    return { ...poll, status: nextStatus };
+                }
+                return poll;
+            });
+
+            return changed ? nextPolls : prevPolls;
+        });
+    }, [setPolls]);
+
+    useEffect(() => {
+        refreshPollStatuses();
+        if (typeof window === "undefined") {
+            return;
+        }
+        const interval = window.setInterval(refreshPollStatuses, 15000);
+        return () => window.clearInterval(interval);
+    }, [refreshPollStatuses]);
 
     // Fetch all poll IDs
     const { data: pollIds, isPending: isPendingPollIds, error: pollIdsError } = useReadContract({

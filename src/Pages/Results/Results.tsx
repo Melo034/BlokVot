@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type JSX } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, type JSX } from "react";
 import { useNavigate } from "react-router-dom";
 import { useReadContract } from "thirdweb/react";
 import { contract } from "@/client";
@@ -20,56 +20,24 @@ import { Navbar } from "@/components/utils/Navbar";
 import { Footer } from "@/components/utils/Footer";
 import Loading from "@/components/utils/Loading";
 import type { Poll, Candidate } from "@/types";
+import { getDerivedPollStatus } from "@/lib/poll-status";
 
-// Custom hook for dynamic poll discovery
-const usePollDiscovery = (maxPolls: number = 10) => {
-    const [discoveredPollIds, setDiscoveredPollIds] = useState<bigint[]>([]);
-    const [currentPollId, setCurrentPollId] = useState(1);
-    const [isDiscovering, setIsDiscovering] = useState(true);
-    const [consecutiveFailures, setConsecutiveFailures] = useState(0);
+const toNumber = (value: number | bigint): number => (typeof value === "bigint" ? Number(value) : value);
 
-    // Check one poll at a time
-    const { data: pollData, isPending, error } = useReadContract({
-        contract,
-        method: "function getPoll(uint256 pollId) view returns (uint256 id, string title, string description, uint256 startTime, uint256 endTime, uint8 status, uint256 totalVotes, uint256 candidateCountOut, uint256 minVotersRequired)",
-        params: [BigInt(currentPollId)],
-        queryOptions: {
-            enabled: isDiscovering && currentPollId <= maxPolls,
-        }
-    });
+const formatPlural = (count: number | bigint, singular: string, plural?: string): string => {
+    const numeric = Math.abs(toNumber(count));
+    const label = numeric === 1 ? singular : plural ?? `${singular}s`;
+    return label;
+};
 
-    useEffect(() => {
-        if (!isDiscovering || isPending) return;
+const formatCountLabel = (count: number | bigint, singular: string, plural?: string): string => {
+    const numeric = toNumber(count);
+    return `${numeric.toLocaleString()} ${formatPlural(numeric, singular, plural)}`;
+};
 
-        if (pollData && !error) {
-            // Poll exists, add it to discovered list
-            setDiscoveredPollIds(prev => {
-                if (!prev.includes(BigInt(currentPollId))) {
-                    return [...prev, BigInt(currentPollId)].sort((a, b) => Number(a) - Number(b));
-                }
-                return prev;
-            });
-            setConsecutiveFailures(0);
-        } else {
-            // Poll doesn't exist
-            setConsecutiveFailures(prev => prev + 1);
-        }
-
-        // Move to next poll
-        if (currentPollId < maxPolls && consecutiveFailures < 3) {
-            setCurrentPollId(prev => prev + 1);
-        } else {
-            // Done discovering
-            setIsDiscovering(false);
-        }
-    }, [pollData, error, isPending, currentPollId, maxPolls, consecutiveFailures, isDiscovering]);
-
-    return {
-        pollIds: discoveredPollIds,
-        isDiscovering,
-        currentlyChecking: isDiscovering ? currentPollId : null,
-        totalFound: discoveredPollIds.length
-    };
+const formatCompactNumber = (value: number | bigint): string => {
+    const numeric = toNumber(value);
+    return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(numeric);
 };
 
 // Helper function to format date
@@ -93,170 +61,345 @@ const getStatusBadge = (status: "upcoming" | "active" | "ended"): JSX.Element =>
     }
 };
 
-// Hook to fetch poll data with error handling
-const usePollData = (pollId: bigint | null) => {
+type PollResultEntry = Poll & {
+    results: Array<{
+        name: string;
+        party: string;
+        votes: number;
+        percentage: number;
+        isTie?: boolean;
+        rank?: number;
+    }>;
+};
+
+type PollResultsFetcherProps = {
+    pollId: bigint;
+    onComplete: (pollId: string, poll: PollResultEntry | null) => void;
+    onError: (pollId: string, details: {
+        pollError?: unknown;
+        resultsError?: unknown;
+        candidatesError?: unknown;
+    }) => void;
+};
+
+const PollResultsFetcher = ({ pollId, onComplete, onError }: PollResultsFetcherProps) => {
     const poll = useReadContract({
         contract,
         method:
             "function getPoll(uint256 pollId) view returns (uint256 id, string title, string description, uint256 startTime, uint256 endTime, uint8 status, uint256 totalVotes, uint256 candidateCountOut, uint256 minVotersRequired)",
-        params: [pollId || BigInt(0)],
-        queryOptions: { enabled: !!pollId },
+        params: [pollId],
+        queryOptions: {
+            refetchInterval: 15000,
+        },
     });
 
     const results = useReadContract({
         contract,
         method: "function getPollResults(uint256 pollId) view returns (uint256[] candidateIds, uint256[] votes)",
-        params: [pollId || BigInt(0)],
-        queryOptions: { enabled: !!pollId && !poll.error },
+        params: [pollId],
+        queryOptions: { enabled: !poll.error, refetchInterval: 15000 },
     });
 
     const candidates = useReadContract({
         contract,
         method:
             "function getCandidateDetailsForPoll(uint256 pollId) view returns (uint256[] ids, string[] names, string[] parties, string[] imageUrls, string[] descriptions, bool[] isActiveList)",
-        params: [pollId || BigInt(0)],
-        queryOptions: { enabled: !!pollId && !poll.error },
+        params: [pollId],
+        queryOptions: { enabled: !poll.error, refetchInterval: 15000 },
     });
 
-    return { poll, results, candidates };
+    useEffect(() => {
+        if (poll.isPending || results.isPending || candidates.isPending) {
+            return;
+        }
+
+        if (poll.error || results.error || candidates.error) {
+            onError(pollId.toString(), {
+                pollError: poll.error,
+                resultsError: results.error,
+                candidatesError: candidates.error,
+            });
+            onComplete(pollId.toString(), null);
+            return;
+        }
+
+        if (!poll.data || !results.data || !candidates.data) {
+            onComplete(pollId.toString(), null);
+            return;
+        }
+
+        const startTime = Number(poll.data[3]);
+        const endTime = Number(poll.data[4]);
+        const contractStatus = Number(poll.data[5]);
+
+        const pollObj: Poll = {
+            id: poll.data[0].toString(),
+            title: poll.data[1],
+            description: poll.data[2],
+            startTime,
+            endTime,
+            startDate: new Date(startTime * 1000).toISOString(),
+            endDate: new Date(endTime * 1000).toISOString(),
+            contractStatus,
+            status: getDerivedPollStatus(startTime, endTime, contractStatus),
+            totalVotes: Number(poll.data[6]),
+            candidateCount: Number(poll.data[7]),
+            createdTime: startTime,
+            isEligible: true,
+            hasVoted: false,
+            minVotersRequired: Number(poll.data[8] ?? 0) || undefined,
+            durationSeconds: Math.max(0, endTime - startTime),
+        };
+
+        const candidateIds = Array.isArray(results.data[0]) ? results.data[0] : [];
+        const votes = Array.isArray(results.data[1]) ? results.data[1] : [];
+
+        const candidateIdsList = Array.isArray(candidates.data[0]) ? candidates.data[0] : [];
+        const candidateNames = Array.isArray(candidates.data[1]) ? candidates.data[1] : [];
+        const candidateParties = Array.isArray(candidates.data[2]) ? candidates.data[2] : [];
+        const candidateImages = Array.isArray(candidates.data[3]) ? candidates.data[3] : [];
+        const candidateDescriptions = Array.isArray(candidates.data[4]) ? candidates.data[4] : [];
+        const candidateActive = Array.isArray(candidates.data[5]) ? candidates.data[5] : [];
+
+        const candidatesList = candidateIdsList
+            .map((id, idx) => {
+                const voteIndex = candidateIds.findIndex((cid) => cid === id);
+                const voteCount = voteIndex >= 0 ? Number(votes[voteIndex]) : 0;
+                const percentage = pollObj.totalVotes > 0 ? Number(((voteCount / pollObj.totalVotes) * 100).toFixed(1)) : 0;
+
+                const candidate: Candidate = {
+                    id: id.toString(),
+                    name: candidateNames[idx] ?? "",
+                    party: candidateParties[idx] ?? "",
+                    imageUrl: candidateImages[idx] || "/placeholder.svg",
+                    description: candidateDescriptions[idx] ?? "",
+                    isActive: candidateActive[idx] ?? false,
+                    votes: voteCount,
+                    percentage,
+                    pollId: pollObj.id,
+                    pollTitle: pollObj.title,
+                };
+
+                return candidate;
+            })
+            .sort((a, b) => b.votes - a.votes);
+
+        const pollWithResults: PollResultEntry = {
+            ...pollObj,
+            results: candidatesList.map((candidate) => ({
+                name: candidate.name,
+                party: candidate.party,
+                votes: candidate.votes,
+                percentage: candidate.percentage,
+                isTie: false,
+            })),
+        };
+
+        onComplete(pollId.toString(), pollWithResults);
+    }, [
+        pollId,
+        poll.data,
+        poll.error,
+        poll.isPending,
+        results.data,
+        results.error,
+        results.isPending,
+        candidates.data,
+        candidates.error,
+        candidates.isPending,
+        onComplete,
+        onError,
+    ]);
+
+    return null;
 };
 
 export const Results = () => {
     const navigate = useNavigate();
     const [selectedFilter, setSelectedFilter] = useState<"all" | "active" | "ended">("all");
     const [selectedYear, setSelectedYear] = useState<string>("2025");
-    const [availablePollIds, setAvailablePollIds] = useState<bigint[]>([]);
-    const [hasShownErrors, setHasShownErrors] = useState(new Set<string>());
+    const [pollResultsMap, setPollResultsMap] = useState<Record<string, PollResultEntry>>({});
+    const [processedPollIds, setProcessedPollIds] = useState<Set<string>>(() => new Set());
+    const pollErrorTracker = useRef(new Set<string>());
+    const refreshStoredStatuses = useCallback(() => {
+        setPollResultsMap((prev) => {
+            let changed = false;
+            const next: Record<string, PollResultEntry> = {};
 
-    // Use custom hook for dynamic poll discovery
-    const { pollIds: discoveredPollIds, isDiscovering, totalFound } = usePollDiscovery(20);
+            Object.entries(prev).forEach(([id, poll]) => {
+                const status = getDerivedPollStatus(poll.startTime, poll.endTime, poll.contractStatus);
+                if (status !== poll.status) {
+                    changed = true;
+                    next[id] = { ...poll, status };
+                } else {
+                    next[id] = poll;
+                }
+            });
 
-    // Update available poll IDs when discovery completes
-    useEffect(() => {
-        if (!isDiscovering && discoveredPollIds.length > 0) {
-            setAvailablePollIds(discoveredPollIds);
-            console.log(`Discovered ${totalFound} polls:`, discoveredPollIds.map(id => id.toString()));
+            return changed ? next : prev;
+        });
+    }, [setPollResultsMap]);
+
+    const { data: pollIdsData, isPending: isLoadingPollIds, error: pollIdsError } = useReadContract({
+        contract,
+        method: "function getAllPolls() view returns (uint256[])",
+        params: [],
+    });
+
+    const pollIdsToFetch = useMemo(() => {
+        if (!Array.isArray(pollIdsData)) {
+            return [] as bigint[];
         }
-    }, [isDiscovering, discoveredPollIds, totalFound]);
 
-    // Fetch data for all available polls
-    const poll1Data = usePollData(availablePollIds[0] || null);
-    const poll2Data = usePollData(availablePollIds[1] || null);
-    const poll3Data = usePollData(availablePollIds[2] || null);
-    const poll4Data = usePollData(availablePollIds[3] || null);
-    const poll5Data = usePollData(availablePollIds[4] || null);
+        return pollIdsData.map((id) => (typeof id === "bigint" ? id : BigInt(id)));
+    }, [pollIdsData]);
 
-    // Combine all poll data
-    const allPollsData = useMemo(() => {
-        const polls = [poll1Data, poll2Data, poll3Data, poll4Data, poll5Data];
-        return polls
-            .map((pollData, index) => ({
-                ...pollData,
-                pollId: availablePollIds[index],
-            }))
-            .filter(item => item.pollId !== undefined);
-    }, [poll1Data, poll2Data, poll3Data, poll4Data, poll5Data, availablePollIds]);
+    useEffect(() => {
+        if (pollIdsError) {
+            console.error("Failed to fetch poll IDs:", pollIdsError);
+            toast.error("Failed to load polls from contract");
+        }
+    }, [pollIdsError]);
 
-    // Process polls with error handling
+    useEffect(() => {
+        if (!pollIdsToFetch.length) {
+            return;
+        }
+
+        refreshStoredStatuses();
+        if (typeof window === "undefined") {
+            return;
+        }
+
+        const interval = window.setInterval(refreshStoredStatuses, 15000);
+        return () => window.clearInterval(interval);
+    }, [pollIdsToFetch.length, refreshStoredStatuses]);
+
+    const handlePollComplete = useCallback(
+        (pollId: string, poll: PollResultEntry | null) => {
+            setProcessedPollIds((prev) => {
+                const next = new Set(prev);
+                next.add(pollId);
+                return next;
+            });
+
+            if (poll) {
+                setPollResultsMap((prev) => ({ ...prev, [pollId]: poll }));
+                pollErrorTracker.current.delete(pollId);
+                return;
+            }
+
+            setPollResultsMap((prev) => {
+                if (!(pollId in prev)) {
+                    return prev;
+                }
+                const updated = { ...prev };
+                delete updated[pollId];
+                return updated;
+            });
+        },
+        [pollErrorTracker],
+    );
+
+    const handlePollError = useCallback(
+        (pollId: string, details: { pollError?: unknown; resultsError?: unknown; candidatesError?: unknown }) => {
+            if (pollErrorTracker.current.has(pollId)) {
+                return;
+            }
+
+            pollErrorTracker.current.add(pollId);
+            console.warn(`Failed to load complete data for poll ${pollId}:`, details);
+            toast.error(`Failed to load poll ${pollId}`);
+        },
+        [pollErrorTracker],
+    );
+
     const pollsWithResults = useMemo(() => {
-        return allPollsData
-            .map(({ poll, results, candidates, pollId }) => {
-                // Skip if any data is still loading
-                if (poll.isPending || results.isPending || candidates.isPending) {
-                    return null;
-                }
+        const data = pollIdsToFetch
+            .map((id) => pollResultsMap[id.toString()])
+            .filter((poll): poll is PollResultEntry => !!poll)
+            .map((poll) => {
+                const tieVotes = new Map<number, number>();
+                poll.results.forEach((candidate) => {
+                    tieVotes.set(candidate.votes, (tieVotes.get(candidate.votes) ?? 0) + 1);
+                });
 
-                // Handle errors gracefully
-                if (poll.error || results.error || candidates.error) {
-                    const errorKey = `poll-${pollId}`;
-                    if (!hasShownErrors.has(errorKey)) {
-                        console.warn(`Failed to load complete data for poll ${pollId}:`, {
-                            pollError: poll.error,
-                            resultsError: results.error,
-                            candidatesError: candidates.error,
-                        });
-
-                        // Only show error toast if it's a critical error, not just missing data
-                        if (poll.error) {
-                            toast.error(`Failed to load poll ${pollId}`);
-                        }
-
-                        setHasShownErrors(prev => new Set(prev).add(errorKey));
+                const ties = new Set<number>();
+                tieVotes.forEach((count, votes) => {
+                    if (count > 1 && votes > 0) {
+                        ties.add(votes);
                     }
-                    return null;
-                }
+                });
 
-                // Skip if no data available
-                if (!poll.data || !results.data || !candidates.data) {
-                    return null;
-                }
-
-                const now = Date.now() / 1000;
-                const startTime = Number(poll.data[3]);
-                const endTime = Number(poll.data[4]);
-
-                const pollObj: Poll = {
-                    id: poll.data[0].toString(),
-                    title: poll.data[1],
-                    description: poll.data[2],
-                    startTime,
-                    endTime,
-                    startDate: new Date(startTime * 1000).toISOString(),
-                    endDate: new Date(endTime * 1000).toISOString(),
-                    contractStatus: Number(poll.data[5]),
-                    status: now >= endTime ? "ended" : now >= startTime ? "active" : "upcoming",
-                    totalVotes: Number(poll.data[6]),
-                    candidateCount: Number(poll.data[7]),
-                    createdTime: startTime,
-                    isEligible: true,
-                    hasVoted: false,
-                };
-
-                const candidatesList: Candidate[] = candidates.data[0]
-                    .map((id, idx) => ({
-                        id: id.toString(),
-                        name: candidates.data[1][idx],
-                        party: candidates.data[2][idx],
-                        imageUrl: candidates.data[3][idx] || "/placeholder.svg",
-                        description: candidates.data[4][idx],
-                        isActive: candidates.data[5][idx],
-                        votes: Number(results.data[1][results.data[0].findIndex((cid) => cid === id)] || 0),
-                        percentage: pollObj.totalVotes > 0
-                            ? Number(((Number(results.data[1][results.data[0].findIndex((cid) => cid === id)] || 0) / pollObj.totalVotes) * 100).toFixed(1))
-                            : 0,
-                        pollId: pollObj.id,
-                        pollTitle: pollObj.title,
-                    }))
-                    .filter(c => c.isActive)
-                    .sort((a, b) => b.votes - a.votes);
+                const resultsWithTie = poll.results.map((candidate, index) => ({
+                    ...candidate,
+                    isTie: ties.has(candidate.votes),
+                    rank: index + 1,
+                }));
 
                 return {
-                    ...pollObj,
-                    results: candidatesList.map(c => ({
-                        name: c.name,
-                        party: c.party,
-                        votes: c.votes,
-                        percentage: c.percentage,
-                    })),
-                };
-            })
-            .filter((p): p is NonNullable<typeof p> => p !== null);
-    }, [allPollsData, hasShownErrors]);
+                    ...poll,
+                    status: getDerivedPollStatus(poll.startTime, poll.endTime, poll.contractStatus),
+                    results: resultsWithTie,
+                } satisfies PollResultEntry;
+            });
 
-    // Filter polls based on status and year
-    const filteredPolls = useMemo(() => {
-        return pollsWithResults.filter(poll => {
+        return data.sort((a, b) => b.endTime - a.endTime);
+    }, [pollIdsToFetch, pollResultsMap]);
+
+    const pollsMatchingYear = useMemo(() => {
+        return pollsWithResults.filter((poll) => {
             const pollYear = new Date(poll.endDate).getFullYear().toString();
-            if (selectedYear !== "all" && pollYear !== selectedYear) return false;
-            if (selectedFilter === "all") return true;
-            return poll.status === selectedFilter;
+            return selectedYear === "all" || pollYear === selectedYear;
         });
-    }, [pollsWithResults, selectedFilter, selectedYear]);
+    }, [pollsWithResults, selectedYear]);
 
-    // Check if still loading (including poll discovery)
-    const isLoading = isDiscovering || allPollsData.some(({ poll, results, candidates }) =>
-        poll.isPending || results.isPending || candidates.isPending
-    );
+    const filteredPolls = useMemo(() => {
+        if (selectedFilter === "all") {
+            return pollsMatchingYear;
+        }
+        return pollsMatchingYear.filter((poll) => poll.status === selectedFilter);
+    }, [pollsMatchingYear, selectedFilter]);
+
+    const summaryStats = useMemo(() => {
+        const activeCount = pollsMatchingYear.filter((poll) => poll.status === "active").length;
+        const endedCount = pollsMatchingYear.filter((poll) => poll.status === "ended").length;
+        const totalVotes = pollsMatchingYear.reduce((sum, poll) => sum + poll.totalVotes, 0);
+        const totalCandidates = pollsMatchingYear.reduce((sum, poll) => sum + poll.candidateCount, 0);
+        return { activeCount, endedCount, totalVotes, totalCandidates };
+    }, [pollsMatchingYear]);
+
+    const summaryCards = useMemo(() => (
+        [
+            {
+                label: formatPlural(summaryStats.activeCount, "Active poll", "Active polls"),
+                value: formatCompactNumber(summaryStats.activeCount),
+                description: "Currently open for voting",
+                icon: Sparkles,
+            },
+            {
+                label: formatPlural(summaryStats.endedCount, "Completed poll", "Completed polls"),
+                value: formatCompactNumber(summaryStats.endedCount),
+                description: "Finalized on-chain",
+                icon: BarChart3,
+            },
+            {
+                label: "Total votes",
+                value: summaryStats.totalVotes.toLocaleString(),
+                description: "Across all matching polls",
+                icon: Download,
+            },
+            {
+                label: formatPlural(summaryStats.totalCandidates, "Candidate", "Candidates"),
+                value: formatCompactNumber(summaryStats.totalCandidates),
+                description: "Standing across these polls",
+                icon: Users,
+            },
+        ]
+    ), [summaryStats]);
+
+    const isProcessingPolls = pollIdsToFetch.length > 0 && pollIdsToFetch.some((id) => !processedPollIds.has(id.toString()));
+    const isLoading = isLoadingPollIds || isProcessingPolls;
 
     // Handle view details
     const handleViewDetails = (pollId: string) => {
@@ -264,7 +407,7 @@ export const Results = () => {
     };
 
     // Handle CSV export for a poll
-    const handleExportPoll = (poll: typeof pollsWithResults[0]) => {
+    const handleExportPoll = (poll: PollResultEntry) => {
         if (!poll || !poll.results.length) {
             toast.error("No data available to export");
             return;
@@ -288,6 +431,14 @@ export const Results = () => {
     return (
         <div className="bg-neutral-900 min-h-screen flex flex-col">
             <Navbar />
+            {pollIdsToFetch.map((pollId) => (
+                <PollResultsFetcher
+                    key={pollId.toString()}
+                    pollId={pollId}
+                    onComplete={handlePollComplete}
+                    onError={handlePollError}
+                />
+            ))}
             <main className="container mx-auto max-w-7xl px-4 py-16 sm:py-24 flex-grow">
                 {isLoading ? (
                     <Card className="text-center p-8 bg-neutral-800 border-neutral-700">
@@ -305,24 +456,12 @@ export const Results = () => {
                         <CardContent className="pt-6">
                             <div className="flex flex-col items-center justify-center space-y-4">
                                 <Users className="h-12 w-12 text-neutral-500/50" />
-                                <p className="text-neutral-500">No polls found</p>
+                                <p className="text-neutral-500">No poll results available</p>
                                 <div className="text-sm space-y-1">
-                                    <p className="text-neutral-600">
-                                        Checked poll IDs 1-10: Found {totalFound} polls
-                                    </p>
-                                    {totalFound > 0 ? (
-                                        <>
-                                            <p className="text-neutral-600">
-                                                Poll IDs: {discoveredPollIds.map(id => id.toString()).join(', ')}
-                                            </p>
-                                            <p className="text-orange-400">
-                                                Polls found but couldn't load complete data (missing results or candidates)
-                                            </p>
-                                        </>
+                                    {pollIdsToFetch.length === 0 ? (
+                                        <p className="text-neutral-600">No polls exist yet or they may be hidden.</p>
                                     ) : (
-                                        <p className="text-neutral-600">
-                                            No polls exist yet or they have different ID numbers
-                                        </p>
+                                        <p className="text-neutral-600">Poll data is not available right now. Please try again later.</p>
                                     )}
                                 </div>
                                 <Button
@@ -462,38 +601,52 @@ export const Results = () => {
                                                     <div className="space-y-4">
                                                         <div className="flex justify-between items-center">
                                                             <h4 className="font-semibold text-white">Leading Candidates</h4>
+                                                            {poll.results.some(candidate => candidate.isTie) && (
+                                                                <Badge variant="secondary" className="bg-yellow-500 text-black border-yellow-400">
+                                                                    Tie detected
+                                                                </Badge>
+                                                            )}
                                                         </div>
                                                         <div className="space-y-3">
-                                                            {poll.results.slice(0, 3).map((candidate, index) => (
-                                                                <div key={index} className="space-y-2">
-                                                                    <div className="flex justify-between items-center">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <div
-                                                                                className={`w-3 h-3 rounded-full ${index === 0
-                                                                                    ? "bg-green-500"
-                                                                                    : index === 1
-                                                                                        ? "bg-blue-500"
-                                                                                        : "bg-yellow-500"
-                                                                                    }`}
-                                                                            />
-                                                                            <span className="font-medium text-white">{candidate.name}</span>
-                                                                            <Badge variant="outline" className="text-xs text-neutral-400">
-                                                                                {candidate.party}
-                                                                            </Badge>
-                                                                        </div>
-                                                                        <div className="text-right">
-                                                                            <div className="font-semibold text-white">{candidate.percentage}%</div>
-                                                                            <div className="text-xs text-neutral-400">
-                                                                                {candidate.votes.toLocaleString()} votes
+                                                            {poll.results.slice(0, 3).map((candidate, index) => {
+                                                                const topTie = poll.results.length > 0 && poll.results[0].isTie;
+                                                                const indicatorColor = topTie
+                                                                    ? "bg-neutral-500"
+                                                                    : index === 0
+                                                                        ? "bg-green-500"
+                                                                        : index === 1
+                                                                            ? "bg-blue-500"
+                                                                            : "bg-yellow-500";
+
+                                                                return (
+                                                                    <div key={`${candidate.name}-${index}`} className="space-y-2">
+                                                                        <div className="flex justify-between items-center">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <div
+                                                                                    className={`w-3 h-3 rounded-full ${indicatorColor}`}
+                                                                                />
+                                                                                <span className="font-medium text-white">{candidate.name}</span>
+                                                                                {candidate.isTie && (
+                                                                                    <Badge className="bg-yellow-500 text-black">Tie</Badge>
+                                                                                )}
+                                                                                <Badge variant="outline" className="text-xs text-neutral-400">
+                                                                                    {candidate.party}
+                                                                                </Badge>
+                                                                            </div>
+                                                                            <div className="text-right">
+                                                                                <div className="font-semibold text-white">{candidate.percentage}%</div>
+                                                                                <div className="text-xs text-neutral-400">
+                                                                                    {candidate.votes.toLocaleString()} votes
+                                                                                </div>
                                                                             </div>
                                                                         </div>
+                                                                        <Progress
+                                                                            value={candidate.percentage}
+                                                                            className="h-2 bg-neutral-700"
+                                                                        />
                                                                     </div>
-                                                                    <Progress
-                                                                        value={candidate.percentage}
-                                                                        className="h-2 bg-neutral-700"
-                                                                    />
-                                                                </div>
-                                                            ))}
+                                                                );
+                                                            })}
                                                         </div>
                                                     </div>
                                                 </CardContent>
@@ -512,3 +665,4 @@ export const Results = () => {
 };
 
 export default Results;
+
