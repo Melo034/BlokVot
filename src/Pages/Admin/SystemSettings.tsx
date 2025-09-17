@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TransactionButton, useReadContract } from "thirdweb/react";
-import { prepareContractCall} from "thirdweb";
+import { prepareContractCall } from "thirdweb";
 import { contract } from "@/client";
 import { AppSidebar } from "@/components/utils/app-sidebar";
 import {
@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, Siren, UserCheck, Settings, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import ConnButton from "./ConnButton";
+import BackButton from "@/components/utils/BackButton";
 
 const SystemSettings = () => {
     const [contractPaused, setContractPaused] = useState(false);
@@ -67,7 +68,8 @@ const SystemSettings = () => {
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>
-                    <div className="flex-1 flex justify-end pr-4">
+                    <div className="flex-1 flex justify-end gap-3 sm:gap-3 pr-2 sm:pr-4">
+                        <BackButton />
                         <ConnButton />
                     </div>
                 </header>

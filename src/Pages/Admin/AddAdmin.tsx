@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Users, Plus } from "lucide-react";
 import { toast } from "sonner";
 import ConnButton from "./ConnButton";
+import BackButton from "@/components/utils/BackButton";
 
 const AddAdmin = () => {
     const [newAdmin, setAdminName] = useState<string>("");
@@ -53,7 +54,8 @@ const AddAdmin = () => {
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>
-                    <div className="flex-1 flex justify-end pr-4">
+                      <div className="flex-1 flex justify-end gap-3 sm:gap-3 pr-2 sm:pr-4">
+                        <BackButton />
                         <ConnButton />
                     </div>
                 </header>

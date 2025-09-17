@@ -45,6 +45,7 @@ import ConnButton from "./ConnButton";
 import { PollStatus } from "@/types";
 import type { PollDetails } from "@/types";
 import Loading from "@/components/utils/Loading";
+import BackButton from "@/components/utils/BackButton";
 
 const getStatusText = (status: PollStatus): string => {
     switch (status) {
@@ -116,7 +117,7 @@ const ManagePolls = () => {
                                 description: poll[2],
                                 candidateCount: Number(poll[7]),
                                 status: parseInt(poll[5].toString()) as PollStatus,
-                                imageUrl: "", 
+                                imageUrl: "",
                                 createdAt: new Date(Number(poll[3]) * 1000).toISOString().split('T')[0],
                                 minVotersRequired: Number(poll[8]),
                             };
@@ -190,7 +191,8 @@ const ManagePolls = () => {
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>
-                    <div className="flex-1 flex justify-end pr-4">
+                    <div className="flex-1 flex justify-end gap-3 sm:gap-3 pr-2 sm:pr-4">
+                        <BackButton />
                         <ConnButton />
                     </div>
                 </header>
@@ -208,7 +210,7 @@ const ManagePolls = () => {
                             </CardHeader>
                             <CardContent>
                                 {isLoading || isPollsPending ? (
-                                    <div className="text-center flex justify-center py-4"><Loading/></div>
+                                    <div className="text-center flex justify-center py-4"><Loading /></div>
                                 ) : polls.length === 0 ? (
                                     <div className="text-center py-4">No polls available</div>
                                 ) : (

@@ -31,6 +31,7 @@ import ConnButton from "./ConnButton";
 import { PollStatus } from "@/types";
 import type { DashboardPoll } from "@/types";
 import Loading from "@/components/utils/Loading";
+import BackButton from "@/components/utils/BackButton";
 
 
 const PollStatusLabel: Record<PollStatus, string> = {
@@ -158,7 +159,8 @@ const Dashboard = () => {
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>
-                    <div className="flex-1 flex justify-end pr-4">
+                    <div className="flex-1 flex justify-end gap-3 sm:gap-3 pr-2 sm:pr-4">
+                        <BackButton />
                         <ConnButton />
                     </div>
                 </header>

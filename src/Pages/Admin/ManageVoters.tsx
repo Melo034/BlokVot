@@ -38,6 +38,7 @@ import { Users } from "lucide-react";
 import { toast } from "sonner";
 import ConnButton from "./ConnButton";
 import Loading from "@/components/utils/Loading";
+import BackButton from "@/components/utils/BackButton";
 
 interface Voter {
     address: string;
@@ -131,7 +132,8 @@ export const ManageVoters = () => {
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>
-                    <div className="flex-1 flex justify-end pr-4">
+                    <div className="flex-1 flex justify-end gap-3 sm:gap-3 pr-2 sm:pr-4">
+                        <BackButton />
                         <ConnButton />
                     </div>
                 </header>

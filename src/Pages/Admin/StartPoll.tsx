@@ -39,6 +39,7 @@ import { toast } from "sonner";
 import ConnButton from "./ConnButton";
 import type { Startpoll } from "@/types";
 import { PollStatus } from "@/types";
+import BackButton from "@/components/utils/BackButton";
 
 
 
@@ -143,7 +144,8 @@ const StartPoll = () => {
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>
-                    <div className="flex-1 flex justify-end pr-4">
+                    <div className="flex-1 flex justify-end gap-3 sm:gap-3 pr-2 sm:pr-4">
+                        <BackButton />
                         <ConnButton />
                     </div>
                 </header>

@@ -43,9 +43,10 @@ import {
 import { Users, Upload, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import ConnButton from "./ConnButton";
-import { PollStatus,  } from "@/types";
+import { PollStatus, } from "@/types";
 import type { CandidatePoll, Candidate } from "@/types";
 import Loading from "@/components/utils/Loading";
+import BackButton from "@/components/utils/BackButton";
 
 
 
@@ -208,7 +209,8 @@ const ManageCandidates = () => {
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>
-                    <div className="flex-1 flex justify-end pr-4">
+                    <div className="flex-1 flex justify-end gap-3 sm:gap-3 pr-2 sm:pr-4">
+                        <BackButton />
                         <ConnButton />
                     </div>
                 </header>
@@ -233,7 +235,7 @@ const ManageCandidates = () => {
                             </CardHeader>
                             <CardContent>
                                 {isLoading || isPollsPending ? (
-                                    <div className="text-center flex justify-center py-4"><Loading/></div>
+                                    <div className="text-center flex justify-center py-4"><Loading /></div>
                                 ) : candidates.length === 0 ? (
                                     <div className="text-center py-4">No candidates available</div>
                                 ) : (
@@ -273,11 +275,10 @@ const ManageCandidates = () => {
                                                             <TableCell className="text-neutral-300">{candidate.pollTitle}</TableCell>
                                                             <TableCell>
                                                                 <span
-                                                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                                                        candidate.isActive
+                                                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${candidate.isActive
                                                                             ? "bg-green-900/30 text-green-400"
                                                                             : "bg-red-900/30 text-red-400"
-                                                                    }`}
+                                                                        }`}
                                                                 >
                                                                     {candidate.isActive ? "Active" : "Inactive"}
                                                                 </span>
@@ -472,14 +473,14 @@ const ManageCandidates = () => {
                                         prev.map(c =>
                                             c.id === selectedCandidate?.id
                                                 ? {
-                                                      ...c,
-                                                      name: updateName,
-                                                      party: updateParty,
-                                                      description: updateDescription,
-                                                      pollId: updatePollId,
-                                                      pollTitle: polls.find(p => p.id === updatePollId)?.title || c.pollTitle,
-                                                      imageUrl: imageFile ? updateImageUrl : c.imageUrl,
-                                                  }
+                                                    ...c,
+                                                    name: updateName,
+                                                    party: updateParty,
+                                                    description: updateDescription,
+                                                    pollId: updatePollId,
+                                                    pollTitle: polls.find(p => p.id === updatePollId)?.title || c.pollTitle,
+                                                    imageUrl: imageFile ? updateImageUrl : c.imageUrl,
+                                                }
                                                 : c
                                         )
                                     );

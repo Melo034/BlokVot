@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TransactionButton } from "thirdweb/react";
-import { prepareContractCall} from "thirdweb";
+import { prepareContractCall } from "thirdweb";
 import { contract } from "@/client";
 import { AppSidebar } from "@/components/utils/app-sidebar";
 import {
@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { UserCheck, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import ConnButton from "./ConnButton";
+import BackButton from "@/components/utils/BackButton";
 
 
 
@@ -36,7 +37,7 @@ export const AddVoters = () => {
     const [voterAddress, setVoterAddress] = useState("");
     const [voterName, setVoterName] = useState("");
     const [voterEmail, setVoterEmail] = useState("");
-    
+
 
     return (
         <SidebarProvider>
@@ -63,7 +64,8 @@ export const AddVoters = () => {
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>
-                    <div className="flex-1 flex justify-end pr-4">
+                    <div className="flex-1 flex justify-end gap-3 sm:gap-3 pr-2 sm:pr-4">
+                        <BackButton />
                         <ConnButton />
                     </div>
                 </header>
