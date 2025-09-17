@@ -8,7 +8,7 @@ const BackButton = () => {
         <div className=" hidden sm:block">
             <Link to="/" aria-label="Back to Home">
                 <Button  size="lg" 
-                    className="items-center text-sm transition-colors sm:inline-flex">
+                    className="items-center text-sm transition-colors sm:inline-flex py-6 px-2 font-semibold">
                     <ArrowLeft className="h-4 w-4 mr-1" />
                     Back Home
                 </Button>
