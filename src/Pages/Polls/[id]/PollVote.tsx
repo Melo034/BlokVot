@@ -303,7 +303,7 @@ export const PollVote = () => {
                     </Card>
                 ) : (
                     <>
-                        <div className="flex justify-end py-2 gap-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2 py-2">
                             <div className="flex items-center gap-2 text-sm text-neutral-400">
                                 <Clock className="h-4 w-4 text-green-500" />
                                 <span>{getTimeDisplay(poll.startTime, poll.endTime, poll.status)}</span>
@@ -530,7 +530,7 @@ export const PollVote = () => {
                                     </div>
                                 </CardContent>
                                 <CardFooter className="flex flex-col space-y-2">
-                                    <div className="grid grid-cols-2 gap-2 w-full">
+                                    <div className="grid w-full gap-2 grid-cols-1 sm:grid-cols-2">
                                         <Button
                                             variant="outline"
                                             onClick={handleFinish}

@@ -380,47 +380,41 @@ export const Result = () => {
     const isLoading = isPollPending || isCandidatesPending || isResultsPending;
 
     return (
-        <div className="bg-neutral-900 min-h-screen flex flex-col">
+        <div className="min-h-screen bg-neutral-950 text-white flex flex-col">
             <Navbar />
-            <main className="container mx-auto max-w-7xl px-4 py-16 sm:py-20 flex-grow">
-                {isLoading ? (
-                    <Card className="text-center p-8 bg-neutral-800 border-neutral-700">
-                        <CardContent className="pt-6">
-                            <div className="flex flex-col items-center justify-center space-y-4">
-                                <Vote className="h-12 w-12 text-neutral-500/50 animate-pulse" />
-                                <div className="flex flex-col items-center space-y-3">
-                                    <Loading />
-                                    <p className="text-neutral-500">Loading poll results...</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ) : !poll ? (
-                    <Card className="text-center p-8 bg-neutral-800 border-neutral-700">
-                        <CardContent className="pt-6">
-                            <div className="flex flex-col items-center justify-center space-y-4">
-                                <Vote className="h-12 w-12 text-neutral-500/50" />
-                                <p className="text-neutral-500">Poll not found</p>
+            <main className="relative flex-grow overflow-hidden">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.14),_transparent_60%)]" />
+                <div className="relative container mx-auto max-w-6xl px-6 py-16 sm:py-20">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center gap-4 rounded-[32px] border border-white/10 bg-white/[0.03] py-20 text-neutral-400">
+                            <Loading />
+                            <p>Loading poll results...</p>
+                        </div>
+                    ) : !poll ? (
+                        <Card className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.02] shadow-[0_60px_120px_-90px_rgba(59,130,246,0.45)]">
+                            <CardContent className="space-y-4 px-8 py-12 text-center">
+                                <Vote className="mx-auto h-12 w-12 text-neutral-400" />
+                                <h2 className="text-2xl font-semibold text-white">Poll not found</h2>
+                                <p className="text-neutral-400">This results dashboard is unavailable.</p>
                                 <Button
                                     onClick={() => navigate("/polls")}
                                     variant="outline"
-                                    className="border-neutral-700 text-neutral-300"
+                                    className="border-white/20 bg-white/[0.02] text-white hover:bg-white/10"
                                 >
                                     Back to Polls
                                 </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <>
                         {/* Header */}
-                        <Card className="mb-8 border-neutral-700/50 bg-gradient-to-br from-neutral-800/80 via-neutral-900 to-black text-white shadow-lg shadow-black/30">
-                            <CardContent className="p-6 flex flex-col gap-6">
+                        <Card className="mb-10 overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] p-[1px] shadow-[0_80px_160px_-120px_rgba(59,130,246,0.45)] backdrop-blur">
+                            <CardContent className="rounded-[30px] bg-neutral-950/95 px-8 py-10 flex flex-col gap-6">
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                     <Button
                                         variant="ghost"
                                         onClick={() => navigate("/polls")}
-                                        className="text-neutral-300 hover:text-white hover:bg-white/10 transition-colors"
+                                        className="rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-neutral-300 transition hover:bg-white/10 hover:text-white"
                                     >
                                         <ArrowLeft className="h-4 w-4 mr-2" />
                                         Back to Polls
@@ -429,14 +423,14 @@ export const Result = () => {
                                         <Button
                                             variant="outline"
                                             onClick={handleExportResults}
-                                            className="border-neutral-600 bg-neutral-900/40 text-neutral-100 hover:bg-neutral-800 hover:text-white"
+                                            className="rounded-full border border-white/20 bg-white/[0.06] text-white transition hover:border-primary/40 hover:bg-primary/20"
                                         >
                                             <Download className="h-4 w-4 mr-2" />
                                             Export CSV
                                         </Button>
                                         <Button
                                             variant="outline"
-                                            className="border-neutral-700 text-neutral-400 min-w-[140px] justify-center"
+                                            className="rounded-full border border-white/10 bg-white/[0.02] text-neutral-400 min-w-[140px] justify-center hover:bg-white/10 hover:text-white"
                                             disabled
                                         >
                                             <Share className="h-4 w-4 mr-2" />
@@ -444,10 +438,10 @@ export const Result = () => {
                                         </Button>
                                     </div>
                                 </div>
-                                <div className="flex flex-col md:flex-row justify-between gap-6">
+                                <div className="flex flex-col gap-6 md:flex-row md:justify-between">
                                     <div>
-                                        <h1 className="text-3xl md:text-4xl font-bold font-lora mb-3 leading-tight">{poll.title}</h1>
-                                        <p className="text-neutral-300/90 mb-4 max-w-3xl leading-relaxed">{poll.description}</p>
+                                        <h1 className="text-3xl md:text-4xl font-bold font-lora mb-3 text-neutral-500 leading-tight">{poll.title}</h1>
+                                        <p className="text-neutral-300 mb-4 max-w-3xl leading-relaxed">{poll.description}</p>
                                         <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-300">
                                             {getStatusBadge(poll.status)}
                                             <span className="flex items-center gap-2">
@@ -465,45 +459,45 @@ export const Result = () => {
                         </Card>
 
                         {/* Key Metrics */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                            <Card className="border-neutral-700/50 bg-neutral-800/80 text-white rounded-2xl shadow-lg shadow-black/20">
+                        <div className="grid grid-cols-1 gap-5 mb-10 sm:grid-cols-2 xl:grid-cols-4">
+                                <Card className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] shadow-[0_40px_120px_-80px_rgba(59,130,246,0.45)]">
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm uppercase tracking-wide text-neutral-400">Total votes</CardTitle>
+                                    <CardTitle className="text-xs uppercase tracking-[0.3em] text-neutral-400">Total votes</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold text-white">{poll.totalVotes.toLocaleString()}</div>
-                                    <p className="text-sm text-neutral-500">{formatPlural(poll.totalVotes, "vote", "votes")} verified</p>
+                                    <div className="text-3xl font-semibold text-white">{poll.totalVotes.toLocaleString()}</div>
+                                    <p className="text-sm text-neutral-400">{formatPlural(poll.totalVotes, "vote", "votes")} verified</p>
                                 </CardContent>
                             </Card>
-                            <Card className="border-neutral-700/50 bg-neutral-800/80 text-white rounded-2xl shadow-lg shadow-black/20">
+                                <Card className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] shadow-[0_40px_120px_-80px_rgba(59,130,246,0.45)]">
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm uppercase tracking-wide text-neutral-400">Candidates</CardTitle>
+                                    <CardTitle className="text-xs uppercase tracking-[0.3em] text-neutral-400">Candidates</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold text-white">{poll.candidateCount.toLocaleString()}</div>
-                                    <p className="text-sm text-neutral-500">{formatPlural(poll.candidateCount, "candidate", "candidates")}</p>
+                                    <div className="text-3xl font-semibold text-white">{poll.candidateCount.toLocaleString()}</div>
+                                    <p className="text-sm text-neutral-400">{formatPlural(poll.candidateCount, "candidate", "candidates")}</p>
                                 </CardContent>
                             </Card>
-                            <Card className="border-neutral-700/50 bg-neutral-800/80 text-white rounded-2xl shadow-lg shadow-black/20">
+                                <Card className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] shadow-[0_40px_120px_-80px_rgba(59,130,246,0.45)]">
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm uppercase tracking-wide text-neutral-400">Participation</CardTitle>
+                                    <CardTitle className="text-xs uppercase tracking-[0.3em] text-neutral-400">Participation</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold text-white">
+                                    <div className="text-3xl font-semibold text-white">
                                         {analytics?.participationRate !== undefined ? `${analytics.participationRate}%` : "--"}
                                     </div>
-                                    <p className="text-sm text-neutral-500">Turnout vs requirement</p>
+                                    <p className="text-sm text-neutral-400">Turnout vs requirement</p>
                                 </CardContent>
                             </Card>
-                            <Card className="border-neutral-700/50 bg-neutral-800/80 text-white rounded-2xl shadow-lg shadow-black/20">
+                                <Card className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] shadow-[0_40px_120px_-80px_rgba(59,130,246,0.45)]">
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm uppercase tracking-wide text-neutral-400">Duration</CardTitle>
+                                    <CardTitle className="text-xs uppercase tracking-[0.3em] text-neutral-400">Duration</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold text-white">
+                                    <div className="text-3xl font-semibold text-white">
                                         {formatDuration(poll.durationSeconds)}
                                     </div>
-                                    <p className="text-xs text-neutral-500 leading-relaxed mt-1">
+                                    <p className="text-xs text-neutral-400 leading-relaxed mt-1">
                                         {formatDateTime(poll.startTime)} - {formatDateTime(poll.endTime)}
                                     </p>
                                 </CardContent>
@@ -511,7 +505,7 @@ export const Result = () => {
                         </div>
 
                         {/* Poll Timeline */}
-                        <Card className="mb-8 border-neutral-700/50 bg-neutral-900/70 text-white rounded-2xl backdrop-blur">
+                        <Card className="mb-8 border-white/10 bg-white/\[0.04\] text-white rounded-2xl backdrop-blur">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 font-lora">
                                     <Calendar className="h-5 w-5" />
@@ -520,7 +514,7 @@ export const Result = () => {
                             </CardHeader>
                             <CardContent>
                                 <div className="relative py-4">
-                                    <div className="absolute left-4 top-6 bottom-6 w-px bg-neutral-700/60 sm:left-6 sm:right-6 sm:top-1/2 sm:bottom-auto sm:h-px sm:w-auto sm:translate-x-0"></div>
+                                    <div className="absolute left-4 top-6 bottom-6 w-px bg-white/15 sm:left-6 sm:right-6 sm:top-1/2 sm:bottom-auto sm:h-px sm:w-auto sm:translate-x-0"></div>
                                     <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
                                         <div className="flex items-start gap-3">
                                             <div className="h-9 w-9 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300">
@@ -554,7 +548,7 @@ export const Result = () => {
                                                     0,
                                                     Math.min(100, ((Date.now() / 1000 - poll.startTime) / (poll.endTime - poll.startTime)) * 100)
                                                 )}
-                                                className="h-2 bg-neutral-800"
+                                                className="h-2 bg-white/10"
                                             />
                                         </div>
                                     )}
@@ -564,20 +558,20 @@ export const Result = () => {
 
                         {/* Main Content Tabs */}
                         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "overview" | "analytics" | "verification")}>
-                            <TabsList className="grid w-full max-w-md grid-cols-3 bg-neutral-800">
-                                <TabsTrigger value="overview" className="text-neutral-300 data-[state=active]:text-neutral-700">
+                            <TabsList className="flex w-full flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-1.5 sm:flex-nowrap sm:justify-start mb-10">
+                                <TabsTrigger value="overview" className="w-full rounded-xl px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
                                     Results
                                 </TabsTrigger>
-                                <TabsTrigger value="analytics" className="text-neutral-300 data-[state=active]:text-neutral-700">
+                                <TabsTrigger value="analytics" className="w-full rounded-xl px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
                                     Analytics
                                 </TabsTrigger>
-                                <TabsTrigger value="verification" className="text-neutral-300 data-[state=active]:text-neutral-700">
+                                <TabsTrigger value="verification" className="w-full rounded-xl mt-3 sm:mt-0 px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
                                     Verification
                                 </TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="overview" className="space-y-6">
-                                <Card className="border-neutral-700/50 bg-neutral-900/70 text-white rounded-2xl">
+                                <Card className="border-white/10 bg-white/\[0.04\] text-white rounded-2xl">
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 font-lora">
                                             <FileBarChart className="h-5 w-5" />
@@ -593,7 +587,7 @@ export const Result = () => {
                                     </CardHeader>
                                     <CardContent>
                                         {candidates.length === 0 ? (
-                                            <p className="text-neutral-500 text-center">No candidates available</p>
+                                            <p className="text-neutral-400 text-center">No candidates available</p>
                                         ) : (
                                             <div className="space-y-6">
                                                 {candidates.map((candidate, index) => (
@@ -601,13 +595,13 @@ export const Result = () => {
                                                         key={candidate.id}
                                                         className={`p-5 rounded-2xl border transition-all ${index === 0 && !isTopTie
                                                             ? "bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-500/30 shadow-lg shadow-emerald-500/10"
-                                                            : "bg-neutral-800/70 border-neutral-700/60 hover:border-neutral-500/60"}
+                                                            : "bg-white/[0.03] border-white/10 hover:border-primary/40"}
                                                             `}
                                                     >
                                                         <div className="flex items-center gap-4 mb-3">
-                                                            <Avatar className="h-12 w-12 border border-neutral-700/60 bg-neutral-900/60 backdrop-blur">
+                                                            <Avatar className="h-12 w-12 border border-white/10/60 bg-white/[0.02]/60 backdrop-blur">
                                                                 <AvatarImage src={resolveImageUrl(candidate.imageUrl)} alt={candidate.name} className="object-cover" />
-                                                                <AvatarFallback className="text-sm font-semibold text-neutral-100 bg-neutral-700/60">
+                                                                <AvatarFallback className="text-sm font-semibold text-white bg-white/15">
                                                                     {getInitials(candidate.name)}
                                                                 </AvatarFallback>
                                                             </Avatar>
@@ -626,7 +620,7 @@ export const Result = () => {
                                                                         <p className="text-sm text-neutral-400">{candidate.party}</p>
                                                                     </div>
                                                                     <div className="text-right">
-                                                                        <div className="text-2xl font-bold text-white">
+                                                                        <div className="text-3xl font-semibold text-white">
                                                                             {candidate.percentage}%
                                                                         </div>
                                                                         <div className="text-sm text-neutral-400">
@@ -637,7 +631,7 @@ export const Result = () => {
                                                             </div>
                                                         </div>
                                                         <div className="space-y-2">
-                                                            <Progress value={candidate.percentage} className="h-3 bg-neutral-700" />
+                                                            <Progress value={candidate.percentage} className="h-3 bg-white/10" />
                                                             <p className="text-sm text-neutral-300">{candidate.description}</p>
                                                         </div>
                                                     </div>
@@ -650,7 +644,7 @@ export const Result = () => {
 
                             <TabsContent value="analytics" className="space-y-6">
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                                    <Card className="border-neutral-700/50 bg-neutral-900/70 text-white rounded-2xl">
+                                    <Card className="border-white/10 bg-white/\[0.04\] text-white rounded-2xl">
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 font-lora">
                                                 <TrendingUp className="h-5 w-5" />
@@ -664,15 +658,15 @@ export const Result = () => {
                                             {analytics ? (
                                                 <div className="space-y-6">
                                                     <div className="grid gap-4 sm:grid-cols-3">
-                                                        <div className="rounded-xl bg-neutral-800/70 border border-neutral-700/60 p-4">
+                                                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                                                             <p className="text-xs uppercase tracking-wide text-neutral-400">Avg votes/hr</p>
                                                             <p className="text-2xl font-semibold text-white mt-1">{analytics.avgVotesPerHour.toLocaleString()}</p>
                                                         </div>
-                                                        <div className="rounded-xl bg-neutral-800/70 border border-neutral-700/60 p-4">
+                                                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                                                             <p className="text-xs uppercase tracking-wide text-neutral-400">Peak window</p>
                                                             <p className="text-2xl font-semibold text-white mt-1">{analytics.peakVotingLabel}</p>
                                                         </div>
-                                                        <div className="rounded-xl bg-neutral-800/70 border border-neutral-700/60 p-4">
+                                                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                                                             <p className="text-xs uppercase tracking-wide text-neutral-400">Participation</p>
                                                             <p className="text-2xl font-semibold text-white mt-1">
                                                                 {analytics.participationRate !== undefined ? `${analytics.participationRate}%` : "--"}
@@ -682,7 +676,7 @@ export const Result = () => {
                                                     <div className="space-y-4">
                                                         <div className="flex items-center justify-between text-sm">
                                                             <span className="text-neutral-400">Vote trend</span>
-                                                            <span className="text-neutral-500">{poll.totalVotes.toLocaleString()} {formatPlural(poll.totalVotes, "vote", "votes")}</span>
+                                                            <span className="text-neutral-400">{poll.totalVotes.toLocaleString()} {formatPlural(poll.totalVotes, "vote", "votes")}</span>
                                                         </div>
                                                         <div className="h-56">
                                                             {voteTrendChartData.length > 1 ? (
@@ -705,24 +699,24 @@ export const Result = () => {
                                                                     </AreaChart>
                                                                 </ResponsiveContainer>
                                                             ) : (
-                                                                <div className="flex h-full items-center justify-center text-sm text-neutral-500">
+                                                                <div className="flex h-full items-center justify-center text-sm text-neutral-400">
                                                                     Not enough data to chart yet.
                                                                 </div>
                                                             )}
                                                         </div>
                                                     </div>
                                                     {poll.minVotersRequired ? (
-                                                        <div className="rounded-xl bg-neutral-800/70 border border-neutral-700/60 p-4 text-sm text-neutral-300">
+                                                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-neutral-300">
                                                             Minimum voters required: <span className="text-white font-medium">{poll.minVotersRequired.toLocaleString()}</span>
                                                         </div>
                                                     ) : null}
                                                 </div>
                                             ) : (
-                                                <p className="text-neutral-500">Analytics data unavailable</p>
+                                                <p className="text-neutral-400">Analytics data unavailable</p>
                                             )}
                                         </CardContent>
                                     </Card>
-                                    <Card className="border-neutral-700/50 bg-neutral-900/70 text-white rounded-2xl">
+                                    <Card className="border-white/10 bg-white/\[0.04\] text-white rounded-2xl">
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 font-lora">
                                                 <FileBarChart className="h-5 w-5" />
@@ -749,7 +743,7 @@ export const Result = () => {
                                                                     <span className="text-neutral-300 truncate pr-2">{entry.name}</span>
                                                                     <span className="text-neutral-400">{entry.percentage}% | {entry.votes.toLocaleString()} {formatPlural(entry.votes, "vote", "votes")}</span>
                                                                 </div>
-                                                                <div className="h-2 rounded-full bg-neutral-700 overflow-hidden">
+                                                                <div className="h-2 rounded-full bg-white/10 overflow-hidden">
                                                                     <div className={`h-full ${colorClass}`} style={{ width: `${Math.min(100, Math.max(entry.percentage, 2))}%` }} />
                                                                 </div>
                                                             </div>
@@ -757,12 +751,12 @@ export const Result = () => {
                                                     })}
                                                 </div>
                                             ) : (
-                                                <p className="text-neutral-500">No vote data available.</p>
+                                                <p className="text-neutral-400">No vote data available.</p>
                                             )}
                                         </CardContent>
                                     </Card>
                                     {barChartData.length > 0 && (
-                                        <Card className="border-neutral-700/50 bg-neutral-900/70 text-white rounded-2xl xl:col-span-2">
+                                        <Card className="border-white/10 bg-white/\[0.04\] text-white rounded-2xl xl:col-span-2">
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2 font-lora">
                                                     <FileBarChart className="h-5 w-5" />
@@ -821,7 +815,7 @@ export const Result = () => {
                             </TabsContent>
 
                             <TabsContent value="verification">
-                                <Card className="border-neutral-700 bg-neutral-800 text-white">
+                                    <Card className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] text-white">
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 font-lora">
                                             <ShieldCheck className="h-5 w-5" />
@@ -879,7 +873,7 @@ export const Result = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="p-4 bg-neutral-700/50 rounded-lg">
+                                            <div className="p-4 bg-white/[0.12] rounded-lg">
                                                 <h4 className="font-medium text-white mb-2">How to Verify Individual Votes</h4>
                                                 <ol className="list-decimal pl-5 space-y-1 text-sm text-neutral-300">
                                                     <li>Each voter receives a unique transaction hash after voting</li>
@@ -893,8 +887,9 @@ export const Result = () => {
                                 </Card>
                             </TabsContent>
                         </Tabs>
-                    </>
+                        </>
                 )}
+                    </div>
             </main>
             <Footer />
         </div>

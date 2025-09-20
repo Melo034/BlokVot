@@ -134,7 +134,7 @@ const Navbar = ({
           </div>
     <div className="flex gap-3 font-pt-serif">
       {showDashboardButton && (
-        <Button className="py-6 px-3 text-sm font-semibold">
+        <Button variant="ghost" className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] py-6 px-3 text-xs font-semibold text-neutral-200 transition hover:border-primary/40 hover:bg-primary/10 hover:text-white">
           <a href={Dashboard.login.url}>{Dashboard.login.text}</a>
         </Button>
       )}
@@ -181,7 +181,7 @@ const Navbar = ({
                   </Accordion>
                   <div className="flex flex-col gap-3">
                     {showDashboardButton && (
-                      <Button className="py-6 px-2 text-sm font-semibold">
+                      <Button variant="ghost" className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] py-6 px-3 text-xs font-semibold text-neutral-200 transition hover:border-primary/40 hover:bg-primary/10 hover:text-white">
                         <a href={Dashboard.login.url}>{Dashboard.login.text}</a>
                       </Button>
                     )}

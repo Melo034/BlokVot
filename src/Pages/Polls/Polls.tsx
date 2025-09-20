@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, type JSX } from "react";
+import React, { useState, useEffect, useCallback, useMemo, type JSX } from "react";
 import { useNavigate } from "react-router-dom";
 import { useReadContract, useActiveAccount } from "thirdweb/react";
 import { contract } from "@/client";
@@ -12,10 +12,10 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Vote, ChevronRight, Users, Clock, BarChart3 } from "lucide-react";
+import { Vote, ChevronRight, Users, Clock, BarChart3, Calendar } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar } from "@/components/utils/Navbar";
 import { Footer } from "@/components/utils/Footer";
@@ -249,10 +249,52 @@ export const Polls = () => {
     const isLoading = isPendingPollIds;
     const isLoadingPolls = pollIdsToFetch.length > 0 && loadedPollIds.size < pollIdsToFetch.length;
 
+
+    const pollInsights = useMemo(() => {
+        const total = polls.length;
+        const active = polls.filter((poll) => poll.status === "active").length;
+        const upcoming = polls.filter((poll) => poll.status === "upcoming").length;
+        const completed = polls.filter((poll) => poll.status === "ended").length;
+        const engaged = polls.filter((poll) => poll.hasVoted).length;
+        const totalVotes = polls.reduce((sum, poll) => sum + (poll.totalVotes || 0), 0);
+        return { total, active, upcoming, completed, engaged, totalVotes };
+    }, [polls]);
+
+    const insightHighlights = useMemo(
+        () =>
+            [
+                {
+                    label: "Active ballots",
+                    value: pollInsights.active,
+                    icon: Clock,
+                    caption: pollInsights.active ? "Now accepting votes" : "Awaiting next launch",
+                },
+                {
+                    label: "Upcoming launches",
+                    value: pollInsights.upcoming,
+                    icon: Calendar,
+                    caption: pollInsights.upcoming ? "Scheduled openings" : "No events scheduled",
+                },
+                {
+                    label: "Votes recorded",
+                    value: pollInsights.totalVotes,
+                    icon: BarChart3,
+                    caption: pollInsights.totalVotes ? "Verified on-chain" : "Awaiting first ballot",
+                },
+                {
+                    label: "Receipts issued",
+                    value: pollInsights.engaged,
+                    icon: Users,
+                    caption: pollInsights.engaged ? "Voters have receipts" : "Be the first to vote",
+                },
+            ] as Array<{ label: string; value: number; icon: LucideIcon; caption: string }>,
+        [pollInsights],
+    );
+
+
     return (
-        <div className="bg-neutral-900 min-h-screen flex flex-col">
+        <div className="min-h-screen bg-neutral-950 text-white flex flex-col">
             <Navbar />
-            {/* Fetch individual polls */}
             {pollIdsToFetch.map((pollId) => (
                 <PollItem
                     key={pollId}
@@ -262,210 +304,249 @@ export const Polls = () => {
                     setLoadedPollIds={setLoadedPollIds}
                 />
             ))}
-            <main className="container max-w-7xl mx-auto py-16 sm:py-20 px-4 flex-grow">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-white font-lora">Available Polls</h1>
-                    <p className="text-neutral-500 mt-2">
-                        Select a poll to view candidates and cast your vote
-                        {isLoadingPolls && ` (Loading ${loadedPollIds.size}/${pollIdsToFetch.length} polls...)`}
-                    </p>
-                </div>
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="mb-8">
-                    <TabsList className="grid w-full max-w-md grid-cols-4 bg-neutral-800">
-                        <TabsTrigger value="all" className="text-neutral-300 data-[state=active]:bg-neutral-700">
-                            All ({polls.length})
-                        </TabsTrigger>
-                        <TabsTrigger value="active" className="text-neutral-300 data-[state=active]:bg-neutral-700">
-                            Active
-                        </TabsTrigger>
-                        <TabsTrigger value="upcoming" className="text-neutral-300 data-[state=active]:bg-neutral-700">
-                            Upcoming
-                        </TabsTrigger>
-                        <TabsTrigger value="completed" className="text-neutral-300 data-[state=active]:bg-neutral-700">
-                            Completed
-                        </TabsTrigger>
-                    </TabsList>
-                </Tabs>
-                {isLoading ? (
-                    <Card className="text-center p-8 bg-neutral-800 border-neutral-700">
-                        <CardContent className="pt-6">
-                            <div className="flex flex-col items-center justify-center space-y-4">
-                                <Vote className="h-12 w-12 text-neutral-500/50 animate-pulse" />
-                                <div className="flex flex-col items-center space-y-3">
-                                    <Loading />
-                                    <p className="text-neutral-500">Loading poll results...</p>
+            <main className="relative flex-grow overflow-hidden">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.18),_transparent_60%)]" />
+                <div className="relative">
+                    <section className="container mx-auto max-w-6xl px-6 pt-16">
+                        <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] p-[1px] shadow-[0_70px_160px_-110px_rgba(37,99,235,0.55)] backdrop-blur">
+                            <div className="rounded-[30px] bg-neutral-950/95 px-8 py-12 sm:px-12">
+                                <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+                                    <div className="max-w-2xl space-y-5">
+                                        <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1 text-xs uppercase tracking-[0.35em] text-primary/70">
+                                            <Vote className="h-3.5 w-3.5" />
+                                            Poll center
+                                        </span>
+                                        <h1 className="text-3xl font-semibold sm:text-4xl lg:text-5xl">Ballots in motion</h1>
+                                        <p className="text-neutral-300">
+                                            Explore live, scheduled, and certified ballots. Every vote is anchored on-chain with instant receipts.
+                                        </p>
+                                        <div className="flex flex-wrap gap-4 text-sm text-neutral-400">
+                                            <span className="flex items-center gap-2">
+                                                <Clock className="h-4 w-4 text-primary/70" />
+                                                {isLoadingPolls
+                                                    ? `Syncing ${loadedPollIds.size}/${pollIdsToFetch.length} ballots...`
+                                                    : `Tracking ${pollInsights.total} total ballot${pollInsights.total === 1 ? "" : "s"}`}
+                                            </span>
+                                            <span className="flex items-center gap-2">
+                                                <Users className="h-4 w-4 text-primary/70" />
+                                                {pollInsights.engaged
+                                                    ? `${pollInsights.engaged} voter${pollInsights.engaged === 1 ? "" : "s"} already have receipts`
+                                                    : "No receipts issued yet"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="grid w-full gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                        {insightHighlights.map(({ label, value, icon: Icon, caption }) => (
+                                            <div
+                                                key={label}
+                                                className="rounded-3xl border border-white/10 bg-white/[0.06] px-5 py-6 shadow-[0_30px_80px_-60px_rgba(59,130,246,0.4)] transition hover:border-primary/40 hover:bg-primary/10"
+                                            >
+                                                <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-neutral-400">
+                                                    <span>{label}</span>
+                                                    <Icon className="h-4 w-4 text-primary/70" />
+                                                </div>
+                                                <p className="mt-3 text-3xl font-semibold text-white">{value.toLocaleString()}</p>
+                                                <p className="mt-2 text-xs text-neutral-400">{caption}</p>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-
                             </div>
-                        </CardContent>
-                    </Card>
-                ) : pollIdsToFetch.length === 0 ? (
-                    <Card className="text-center p-8 bg-neutral-800 border-neutral-700">
-                        <CardContent className="pt-6">
-                            <div className="flex flex-col items-center justify-center space-y-4">
-                                <Vote className="h-12 w-12 text-neutral-500/50" />
-                                <p className="text-neutral-500">No polls found in the smart contract</p>
-                                <p className="text-neutral-400 text-sm">
-                                    Poll IDs: {pollIds ? `[${pollIds.join(", ")}]` : "None"}
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ) : filteredPolls.length === 0 && !isLoadingPolls ? (
-                    <Card className="text-center p-8 bg-neutral-800 border-neutral-700">
-                        <CardContent className="pt-6">
-                            <div className="flex flex-col items-center justify-center space-y-4">
-                                <Vote className="h-12 w-12 text-neutral-500/50" />
-                                <p className="text-neutral-500">No polls available in this category</p>
-                                <p className="text-neutral-400 text-sm">Try switching to a different tab or check back later</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {filteredPolls.map((poll) => {
-                            const { remaining, untilStart } = getTimeDisplay(poll.startTime, poll.endTime, poll.status);
-                            return (
-                                <Card key={poll.id} className="overflow-hidden border-neutral-700/50 bg-gradient-to-br from-neutral-800/80 via-neutral-900 to-black shadow-lg shadow-black/30">
-                                    <CardHeader className="pb-3">
-                                        <div className="flex justify-between items-start">
-                                            <CardTitle className="text-xl text-white font-lora">{poll.title}</CardTitle>
-                                            <div className="flex gap-2">{getStatusBadge(poll.status)}</div>
+                        </div>
+                    </section>
+                    <section className="container mx-auto max-w-6xl px-6 pb-24 mt-10">
+                        <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.02] shadow-[0_80px_160px_-120px_rgba(37,99,235,0.55)] backdrop-blur">
+                            <div className="flex flex-col gap-8 px-6 py-8 sm:px-10 sm:py-12">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <h2 className="text-2xl font-semibold text-white">Ballots by status</h2>
+                                        <p className="text-neutral-400">
+                                            Filter and jump straight into the ballot that matters. Results refresh in real time.
+                                        </p>
+                                    </div>
+                                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="w-full sm:w-auto">
+                                        <TabsList className="flex w-full flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-1.5 sm:flex-nowrap sm:justify-start">
+                                            <TabsTrigger value="all" className="w-full rounded-xl px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
+                                                All ({polls.length})
+                                            </TabsTrigger>
+                                            <TabsTrigger value="active" className="w-full rounded-xl px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
+                                                Active
+                                            </TabsTrigger>
+                                            <TabsTrigger value="upcoming" className="w-full rounded-xl mt-3 sm:mt-0 px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
+                                                Upcoming
+                                            </TabsTrigger>
+                                            <TabsTrigger value="completed" className="w-full rounded-xl mt-3 sm:mt-0 px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
+                                                Completed
+                                            </TabsTrigger>
+                                        </TabsList>
+                                    </Tabs>
+                                </div>
+                                {isLoading ? (
+                                    <div className="flex flex-col items-center justify-center gap-4 rounded-[28px] border border-white/10 bg-white/[0.03] py-16 text-neutral-400">
+                                        <Loading />
+                                        <p>Fetching ballot directory...</p>
+                                    </div>
+                                ) : pollIdsToFetch.length === 0 ? (
+                                    <div className="rounded-[28px] border border-dashed border-white/10 bg-white/[0.02] py-16 text-center text-neutral-400">
+                                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.05]">
+                                            <Vote className="h-5 w-5 text-primary/70" />
                                         </div>
-                                        <CardDescription className="text-neutral-400">{poll.description}</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="pb-3">
-                                        <div className="space-y-4">
-                                            {/* Basic Info */}
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <Users className="h-4 w-4 text-neutral-500" />
-                                                    <span className="text-neutral-400">
-                                                        {poll.candidateCount <= 0
-                                                            ? "No candidates"
-                                                            : `${poll.candidateCount} candidate${poll.candidateCount === 1 ? "" : "s"}`}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <BarChart3 className="h-4 w-4 text-neutral-500" />
-                                                    <span className="text-neutral-400">
-                                                        {poll.status === "upcoming"
-                                                            ? "Votes: N/A"
-                                                            : poll.totalVotes <= 0
-                                                                ? "No votes"
-                                                                : `${poll.totalVotes} vote${poll.totalVotes === 1 ? "" : "s"}`}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            {/* Timing Information */}
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <Clock className="h-4 w-4 text-green-500" />
-                                                    <span className="text-neutral-400">Start:</span>
-                                                    <span className="text-neutral-300">{formatDateTime(poll.startTime)}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <Clock className="h-4 w-4 text-red-500" />
-                                                    <span className="text-neutral-400">End:</span>
-                                                    <span className="text-neutral-300">{formatDateTime(poll.endTime)}</span>
-                                                </div>
-                                            </div>
-                                            {/* Time Remaining or Until Start */}
-                                            {(remaining || untilStart) && (
-                                                <div className="pt-2 border-t border-neutral-700">
-                                                    <div className="flex items-center justify-between text-sm mb-2">
-                                                        <span className="text-neutral-400">{untilStart ? "Starts in:" : "Time Remaining:"}</span>
-                                                        <span className="font-medium text-white">{untilStart || remaining}</span>
-                                                    </div>
-                                                    {poll.status === "active" && (
-                                                        <Progress
-                                                            value={Math.max(
-                                                                0,
-                                                                Math.min(
-                                                                    100,
-                                                                    ((Date.now() / 1000 - poll.startTime) / (poll.endTime - poll.startTime)) * 100
-                                                                )
+                                        <h3 className="mt-4 text-lg font-semibold text-white">No ballots deployed yet</h3>
+                                        <p className="mt-2 text-sm text-neutral-400">
+                                            Poll IDs: {pollIds ? `[${pollIds.join(", ")}]` : "None"}
+                                        </p>
+                                    </div>
+                                ) : filteredPolls.length === 0 && !isLoadingPolls ? (
+                                    <div className="rounded-[28px] border border-dashed border-white/10 bg-white/[0.02] py-16 text-center text-neutral-400">
+                                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.05]">
+                                            <Vote className="h-5 w-5 text-primary/70" />
+                                        </div>
+                                        <h3 className="mt-4 text-lg font-semibold text-white">No ballots in this category</h3>
+                                        <p className="mt-2 text-sm text-neutral-400">Try another filter or check back soon.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-6 sm:grid-cols-2 mt-5">
+                                        {filteredPolls.map((poll) => {
+                                            const { remaining, untilStart } = getTimeDisplay(poll.startTime, poll.endTime, poll.status);
+                                            return (
+                                                <Card
+                                                    key={poll.id}
+                                                    className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.02] shadow-[0_60px_120px_-90px_rgba(37,99,235,0.45)] transition hover:border-primary/40 hover:bg-primary/5"
+                                                >
+                                                    <CardHeader className="pb-4">
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <CardTitle className="text-lg sm:text-xl font-semibold text-white font-lora">{poll.title}</CardTitle>
+                                                            <div className="flex gap-2">{getStatusBadge(poll.status)}</div>
+                                                        </div>
+                                                        <CardDescription className="text-sm text-neutral-300">{poll.description}</CardDescription>
+                                                    </CardHeader>
+                                                    <CardContent className="space-y-5">
+                                                        <div className="grid gap-4 text-sm sm:grid-cols-2">
+                                                            <div className="flex items-center gap-2 text-neutral-300">
+                                                                <Users className="h-4 w-4 text-primary/70" />
+                                                                <span>
+                                                                    {poll.candidateCount <= 0
+                                                                        ? "No candidates"
+                                                                        : `${poll.candidateCount} candidate${poll.candidateCount === 1 ? "" : "s"}`}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-neutral-300">
+                                                                <BarChart3 className="h-4 w-4 text-primary/70" />
+                                                                <span>
+                                                                    {poll.status === "upcoming"
+                                                                        ? "Votes: N/A"
+                                                                        : poll.totalVotes <= 0
+                                                                            ? "No votes yet"
+                                                                            : `${poll.totalVotes} vote${poll.totalVotes === 1 ? "" : "s"}`}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm">
+                                                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-neutral-300 px-4 sm:px-6 w-full">
+                                                                <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
+                                                                    <span className="flex items-center gap-1.5 sm:gap-2 text-neutral-400 text-xs sm:text-sm">
+                                                                        <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary/70" />
+                                                                        Start
+                                                                    </span>
+                                                                    <span className="text-xs sm:text-sm">{formatDateTime(poll.startTime)}</span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
+                                                                    <span className="flex items-center gap-1.5 sm:gap-2 text-neutral-400 text-xs sm:text-sm">
+                                                                        <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-400" />
+                                                                        End
+                                                                    </span>
+                                                                    <span className="text-xs sm:text-sm">{formatDateTime(poll.endTime)}</span>
+                                                                </div>
+                                                            </div>
+                                                            {(remaining || untilStart) && (
+                                                                <div className="pt-3">
+                                                                    <div className="flex items-center justify-between text-neutral-300 px-4 sm:px-6">
+                                                                        <span className="text-sm sm:text-lg">{untilStart ? "Starts in" : "Time remaining"}</span>
+                                                                        <span className="font-medium text-white text-sm sm:text-lg">{untilStart || remaining}</span>
+                                                                    </div>
+                                                                    {poll.status === "active" && (
+                                                                        <Progress
+                                                                            value={Math.max(
+                                                                                0,
+                                                                                Math.min(
+                                                                                    100,
+                                                                                    ((Date.now() / 1000 - poll.startTime) / (poll.endTime - poll.startTime)) * 100
+                                                                                )
+                                                                            )}
+                                                                            className="mt-2 h-2 bg-white/10"
+                                                                        />
+                                                                    )}
+                                                                </div>
                                                             )}
-                                                            className="h-2 bg-neutral-700"
-                                                        />
-                                                    )}
-                                                </div>
-                                            )}
-                                            {/* Voting Stats for Ended Polls */}
-                                            {poll.status === "ended" && poll.totalVotes > 0 && (
-                                                <div className="pt-2 border-t border-neutral-700">
-                                                    <div className="text-sm space-y-1">
-                                                        <div className="flex justify-between">
-                                                            <span className="text-neutral-400">Total Votes:</span>
-                                                            <span className="text-white font-medium">{poll.totalVotes.toLocaleString()}</span>
                                                         </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-neutral-400">Avg per Candidate:</span>
-                                                            <span className="text-neutral-300">
-                                                                {Math.round(poll.totalVotes / poll.candidateCount).toLocaleString()}
-                                                            </span>
+                                                        {poll.status === "ended" && poll.totalVotes > 0 && (
+                                                            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm">
+                                                                <div className="flex justify-between text-neutral-300">
+                                                                    <span>Total votes</span>
+                                                                    <span className="font-medium text-white">{poll.totalVotes.toLocaleString()}</span>
+                                                                </div>
+                                                                <div className="mt-2 flex justify-between text-neutral-300">
+                                                                    <span>Average per candidate</span>
+                                                                    <span>{Math.round(poll.totalVotes / poll.candidateCount).toLocaleString()}</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </CardContent>
+                                                    <CardFooter className="border-t border-white/5 bg-white/[0.02] px-6 py-4">
+                                                        <Button
+                                                            onClick={() => handleViewPoll(poll)}
+                                                            className="w-full rounded-xl bg-primary/90 py-2 text-white transition hover:bg-primary"
+                                                            aria-label={
+                                                                poll.hasVoted
+                                                                    ? "View vote receipt"
+                                                                    : poll.status === "active"
+                                                                        ? "View and vote in poll"
+                                                                        : poll.status === "upcoming"
+                                                                            ? "View poll details"
+                                                                            : "View poll results"
+                                                            }
+                                                        >
+                                                            {poll.hasVoted
+                                                                ? "View receipt"
+                                                                : poll.status === "active"
+                                                                    ? "View & vote"
+                                                                    : poll.status === "upcoming"
+                                                                        ? "View details"
+                                                                        : "View results"}
+                                                            <ChevronRight className="ml-2 h-4 w-4" />
+                                                        </Button>
+                                                    </CardFooter>
+                                                </Card>
+                                            );
+                                        })}
+                                        {isLoadingPolls &&
+                                            Array.from({ length: Math.min(3, pollIdsToFetch.length - loadedPollIds.size) }).map((_, i) => (
+                                                <Card
+                                                    key={`loading-${i}`}
+                                                    className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.02] animate-pulse"
+                                                >
+                                                    <CardHeader className="pb-4">
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="h-6 w-3/4 rounded bg-white/10" />
+                                                            <div className="h-6 w-16 rounded bg-white/10" />
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                    <Separator className="bg-neutral-700" />
-                                    <CardFooter className="pt-3">
-                                        <Button
-                                            onClick={() => handleViewPoll(poll)}
-                                            className="w-full bg-primary hover:bg-primary/90 text-white"
-                                            aria-label={
-                                                poll.hasVoted
-                                                    ? "View vote receipt"
-                                                    : poll.status === "active"
-                                                        ? "View and vote in poll"
-                                                        : poll.status === "upcoming"
-                                                            ? "View poll details"
-                                                            : "View poll results"
-                                            }
-                                        >
-                                            {poll.hasVoted
-                                                ? "View Receipt"
-                                                : poll.status === "active"
-                                                    ? "View & Vote"
-                                                    : poll.status === "upcoming"
-                                                        ? "View Details"
-                                                        : "View Results"}
-                                            <ChevronRight className="h-4 w-4 ml-1" />
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            );
-                        })}
-                        {/* Loading placeholders */}
-                        {isLoadingPolls &&
-                            Array.from({ length: Math.min(3, pollIdsToFetch.length - loadedPollIds.size) }).map((_, i) => (
-                                <Card
-                                    key={`loading-${i}`}
-                                    className="overflow-hidden bg-neutral-800 border-neutral-700 animate-pulse"
-                                >
-                                    <CardHeader className="pb-3">
-                                        <div className="flex justify-between items-start">
-                                            <div className="h-6 bg-neutral-700 rounded w-3/4" />
-                                            <div className="h-6 bg-neutral-700 rounded w-16" />
-                                        </div>
-                                        <div className="h-4 bg-neutral-700 rounded w-full mt-2" />
-                                    </CardHeader>
-                                    <CardContent className="pb-3">
-                                        <div className="space-y-3">
-                                            <div className="h-4 bg-neutral-700 rounded w-2/3" />
-                                            <div className="h-4 bg-neutral-700 rounded w-1/2" />
-                                        </div>
-                                    </CardContent>
-                                    <Separator className="bg-neutral-700" />
-                                    <CardFooter className="pt-3">
-                                        <div className="h-10 bg-neutral-700 rounded w-full" />
-                                    </CardFooter>
-                                </Card>
-                            ))}
-                    </div>
-                )}
+                                                        <div className="mt-2 h-4 w-full rounded bg-white/10" />
+                                                    </CardHeader>
+                                                    <CardContent className="space-y-3 pb-4">
+                                                        <div className="h-4 w-2/3 rounded bg-white/10" />
+                                                        <div className="h-4 w-1/2 rounded bg-white/10" />
+                                                    </CardContent>
+                                                    <CardFooter className="border-t border-white/5 py-4">
+                                                        <div className="h-10 w-full rounded bg-white/10" />
+                                                    </CardFooter>
+                                                </Card>
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+                </div>
             </main>
             <Footer />
         </div>

@@ -45,11 +45,23 @@ const formatDate = (dateString: string): string => {
 const getStatusBadge = (status: "upcoming" | "active" | "ended"): JSX.Element => {
     switch (status) {
         case "active":
-            return <Badge className="bg-emerald-500/80 text-white">Active</Badge>;
+            return (
+                <Badge className="rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-emerald-200">
+                    Active
+                </Badge>
+            );
         case "ended":
-            return <Badge variant="outline" className="border-neutral-700 text-neutral-400">Ended</Badge>;
+            return (
+                <Badge className="rounded-full border border-white/20 bg-white/[0.06] px-3 py-1 text-neutral-300">
+                    Ended
+                </Badge>
+            );
         default:
-            return <Badge className="bg-sky-500/80 text-white">Upcoming</Badge>;
+            return (
+                <Badge className="rounded-full border border-sky-500/30 bg-sky-500/15 px-3 py-1 text-sky-200">
+                    Upcoming
+                </Badge>
+            );
     }
 };
 
@@ -321,6 +333,17 @@ export const Results = () => {
             .sort((a, b) => b.endTime - a.endTime);
     }, [pollIdsToFetch, pollResultsMap]);
 
+    const availableYears = useMemo(() => {
+        const years = new Set<string>();
+        pollsWithResults.forEach((poll) => {
+            const year = new Date(poll.endDate).getFullYear();
+            if (!Number.isNaN(year)) {
+                years.add(year.toString());
+            }
+        });
+        return Array.from(years).sort((a, b) => Number(b) - Number(a));
+    }, [pollsWithResults]);
+
     const handleExportPoll = useCallback((poll: PollResultEntry) => {
         try {
             const data = {
@@ -404,8 +427,9 @@ export const Results = () => {
     const isProcessingPolls = pollIdsToFetch.length > 0 && pollIdsToFetch.some((id) => !processedPollIds.has(id.toString()));
     const isLoading = isLoadingPollIds || isProcessingPolls;
 
+
     return (
-        <div className="bg-neutral-950 min-h-screen flex flex-col text-white">
+        <div className="min-h-screen bg-neutral-950 text-white flex flex-col">
             <Navbar />
             {pollIdsToFetch.map((pollId) => (
                 <PollResultsFetcher
@@ -415,151 +439,177 @@ export const Results = () => {
                     onError={handlePollError}
                 />
             ))}
-            <main className="flex-grow">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-12">
+            <main className="relative flex-grow overflow-hidden">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_60%)]" />
+                <div className="relative container mx-auto max-w-6xl px-6 py-16 sm:py-20">
                     {isLoading ? (
-                        <Card className="text-center p-10 bg-neutral-900/70 border-neutral-800 rounded-3xl">
-                            <CardContent className="pt-6">
-                                <div className="flex flex-col items-center justify-center space-y-4">
-                                    <Loading />
-                                    <p className="text-neutral-400">Loading election results...</p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <div className="flex flex-col items-center justify-center gap-4 rounded-[32px] border border-white/10 bg-white/[0.03] py-20 text-neutral-400">
+                            <Loading />
+                            <p>Loading election results...</p>
+                        </div>
                     ) : pollsMatchingYear.length === 0 ? (
-                        <Card className="text-center p-10 bg-neutral-900/70 border-neutral-800 rounded-3xl">
-                            <CardContent className="pt-6">
-                                <div className="flex flex-col items-center justify-center space-y-4">
-                                    <Users className="h-12 w-12 text-neutral-500/60" />
-                                    <p className="text-neutral-400">No poll results available.</p>
-                                    <Button onClick={() => navigate("/polls")} variant="outline" className="border-neutral-700 text-neutral-100">
-                                        Back to polls
-                                    </Button>
-                                </div>
+                        <Card className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.02] shadow-[0_60px_120px_-90px_rgba(59,130,246,0.45)]">
+                            <CardContent className="space-y-4 px-8 py-12 text-center">
+                                <Users className="mx-auto h-12 w-12 text-neutral-400" />
+                                <h2 className="text-2xl font-semibold text-white">No poll results available</h2>
+                                <p className="text-neutral-400">Adjust filters or check back once ballots close.</p>
+                                <Button
+                                    onClick={() => navigate("/polls")}
+                                    variant="outline"
+                                    className="rounded-full border-white/20 bg-white/[0.02] px-6 text-white hover:bg-white/10"
+                                >
+                                    Back to polls
+                                </Button>
                             </CardContent>
                         </Card>
                     ) : (
                         <>
-                            <Card className=" border-neutral-700/50 bg-gradient-to-br from-neutral-800/80 via-neutral-900 to-black text-white shadow-lg shadow-black/30 rounded-3xl">
-                                <CardContent className="p-8 flex flex-col gap-6">
-                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                        <div className="space-y-2">
-                                            <p className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1 text-xs font-medium text-primary">
-                                                Tamper-proof tallies
-                                            </p>
-                                            <h1 className="text-3xl sm:text-4xl font-bold text-neutral-100 font-lora">Election results overview</h1>
-                                            <p className="text-neutral-400 max-w-2xl">
-                                                {formatCountLabel(pollsMatchingYear.length, "poll result", "poll results")} available for your filters.
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-neutral-400 text-sm">
-                                            <Clock className="h-5 w-5" />
-                                            <span>Last updated {new Date().toLocaleTimeString()}</span>
-                                        </div>
-                                    </div>
-                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                        {summaryCards.map(({ label, value, description, icon: Icon }) => (
-                                            <div key={label} className="rounded-2xl border border-neutral-800 bg-neutral-900/80 backdrop-blur p-4 shadow-lg shadow-black/10">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <p className="text-xs uppercase tracking-wide text-neutral-500">{label}</p>
-                                                    <Icon className="h-5 w-5 text-primary" />
-                                                </div>
-                                                <p className="text-2xl font-semibold text-white">{value}</p>
-                                                <p className="text-xs text-neutral-500 mt-1">{description}</p>
+                            <section className="space-y-10">
+                                <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] p-[1px] shadow-[0_80px_160px_-120px_rgba(59,130,246,0.45)] backdrop-blur">
+                                    <div className="rounded-[30px] bg-neutral-950/95 px-8 py-10 space-y-8">
+                                        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                                            <div className="space-y-4 max-w-2xl">
+                                                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] px-4 py-1 text-xs uppercase tracking-[0.35em] text-primary/70">
+                                                    Verified tallies
+                                                </span>
+                                                <h1 className="text-3xl font-semibold leading-tight sm:text-4xl font-lora">Election results overview</h1>
+                                                <p className="text-neutral-300">
+                                                    {formatCountLabel(pollsMatchingYear.length, "poll result", "poll results")} currently match your filters.
+                                                </p>
                                             </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <Tabs value={selectedFilter} onValueChange={(value) => setSelectedFilter(value as "all" | "active" | "ended")} className="space-y-6">
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                    <TabsList className="bg-neutral-900/60  border border-neutral-800 rounded-full p-1 w-full sm:w-auto">
-                                        <TabsTrigger value="all" className="rounded-full px-4 text-white data-[state=active]:bg-primary/80 data-[state=active]:text-white">
-                                            All  ({formatCountLabel(pollsMatchingYear.length, "result", "results")})
-                                        </TabsTrigger>
-                                        <TabsTrigger value="active" className="rounded-full px-4 text-white data-[state=active]:bg-primary/80 data-[state=active]:text-white">
-                                            Active ({formatCountLabel(summaryStats.activeCount, "result", "results")})
-                                        </TabsTrigger>
-                                        <TabsTrigger value="ended" className="rounded-full px-4 text-white data-[state=active]:bg-primary/80 data-[state=active]:text-white">
-                                            Completed ({formatCountLabel(summaryStats.endedCount, "result", "results")})
-                                        </TabsTrigger>
-                                    </TabsList>
-                                    <div className="flex items-center gap-2">
-                                        <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                            <SelectTrigger className="w-32 bg-neutral-900/70 border-neutral-800 text-white">
-                                                <SelectValue placeholder="Year" />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-neutral-900/90 border-neutral-800 text-white">
-                                                <SelectItem value="all">All Years</SelectItem>
-                                                <SelectItem value="2024">2024</SelectItem>
-                                                <SelectItem value="2025">2025</SelectItem>
-                                                <SelectItem value="2026">2026</SelectItem>
-                                                <SelectItem value="2027">2027</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <Button variant="outline" size="icon" className="border-primary text-primary" disabled>
-                                            <Download className="h-4 w-4" />
-                                        </Button>
+                                            <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-400 justify-between sm:justify-end">
+                                                <Clock className="h-4 w-4 text-primary/70" />
+                                                <span>Last synced {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                                            </div>
+                                        </div>
+                                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                            {summaryCards.map(({ label, value, description, icon: Icon }) => (
+                                                <div
+                                                    key={label}
+                                                    className="rounded-3xl border border-white/10 bg-white/[0.06] px-5 py-6 shadow-[0_30px_80px_-60px_rgba(59,130,246,0.4)]"
+                                                >
+                                                    <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-neutral-400">
+                                                        <span>{label}</span>
+                                                        <Icon className="h-4 w-4 text-primary/70" />
+                                                    </div>
+                                                    <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
+                                                    <p className="mt-2 text-xs text-neutral-400">{description}</p>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
+                            </section>
 
-                                <TabsContent value={selectedFilter}>
-                                    <div className="space-y-6">
-                                        {filteredPolls.length === 0 ? (
-                                            <Card className="bg-neutral-900/70 border-neutral-800 text-center p-8 rounded-3xl">
-                                                <CardContent className="pt-6">
-                                                    <p className="text-neutral-400">No polls match the selected filters.</p>
-                                                </CardContent>
-                                            </Card>
-                                        ) : (
-                                            filteredPolls.map((poll) => (
-                                                <Card key={poll.id} className="bg-neutral-900/70 border-neutral-800 rounded-3xl">
-                                                    <CardHeader>
-                                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                                            <div>
-                                                                <div className="flex items-center gap-3 mb-2">
-                                                                    <CardTitle className="text-xl text-white font-lora">{poll.title}</CardTitle>
-                                                                    {getStatusBadge(poll.status)}
+                            <section className="space-y-12 pt-10">
+                                <Tabs value={selectedFilter} onValueChange={(value) => setSelectedFilter(value as "all" | "active" | "ended")} className="space-y-8">
+                                    <div className="flex flex-col gap-4 sm:gap-3 md:flex-row md:items-center md:justify-between px-4 sm:px-6">
+                                        <TabsList className="flex w-full flex-wrap gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-1.5 sm:flex-nowrap sm:justify-start md:w-auto">
+                                            <TabsTrigger
+                                                value="all"
+                                                className="flex-1 min-w-[80px] rounded-lg px-3 py-1.5 text-xs sm:text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:flex-initial"
+                                            >
+                                                All ({formatCountLabel(pollsMatchingYear.length, "result", "results")})
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="active"
+                                                className="flex-1 min-w-[80px] rounded-lg px-3 py-1.5 text-xs sm:text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:flex-initial"
+                                            >
+                                                Active ({formatCountLabel(summaryStats.activeCount, "result", "results")})
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="ended"
+                                                className="flex-1 min-w-[80px] mt-3 sm:mt-0 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:flex-initial"
+                                            >
+                                                Completed ({formatCountLabel(summaryStats.endedCount, "result", "results")})
+                                            </TabsTrigger>
+                                        </TabsList>
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 mt-10 md:mt-0">
+                                            <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                                <SelectTrigger className="w-full rounded-lg border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs sm:text-sm text-neutral-200 sm:w-36 md:w-44">
+                                                    <SelectValue placeholder="Year" />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-lg border border-white/[0.08] bg-neutral-950/95 text-white max-h-[200px] overflow-y-auto">
+                                                    <SelectItem value="all">All years</SelectItem>
+                                                    {availableYears.map((year) => (
+                                                        <SelectItem key={year} value={year}>
+                                                            {year}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="rounded-lg border-white/15 bg-white/[0.03] text-neutral-300 hover:bg-white/10 h-8 w-8 sm:h-9 sm:w-9"
+                                                disabled
+                                            >
+                                                <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <TabsContent value={selectedFilter}>
+                                        <div className="space-y-6">
+                                            {filteredPolls.length === 0 ? (
+                                                <Card className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.02] text-center">
+                                                    <CardContent className="px-8 py-10">
+                                                        <p className="text-neutral-400">No polls match the selected filters.</p>
+                                                    </CardContent>
+                                                </Card>
+                                            ) : (
+                                                filteredPolls.map((poll) => (
+                                                    <Card
+                                                        key={poll.id}
+                                                        className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] shadow-[0_60px_120px_-90px_rgba(59,130,246,0.45)] transition hover:border-primary/40 hover:bg-primary/5"
+                                                    >
+                                                        <CardHeader className="pb-4">
+                                                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                                                <div>
+                                                                    <div className="flex flex-wrap items-center gap-3">
+                                                                        <CardTitle className="text-sm sm:text-xl font-lora text-white">{poll.title}</CardTitle>
+                                                                        {getStatusBadge(poll.status)}
+                                                                    </div>
+                                                                    <CardDescription className="mt-2 text-sm text-neutral-300">{poll.description}</CardDescription>
+                                                                    <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-neutral-400">
+                                                                        <span className="flex items-center gap-2">
+                                                                            <Calendar className="h-4 w-4 text-primary/70" />
+                                                                            Ends {formatDate(poll.endDate)}
+                                                                        </span>
+                                                                        <span className="flex items-center gap-2">
+                                                                            <Users className="h-4 w-4 text-primary/70" />
+                                                                            {poll.totalVotes.toLocaleString()} {formatPlural(poll.totalVotes, "vote", "votes")}
+                                                                        </span>
+                                                                    </div>
                                                                 </div>
-                                                                <CardDescription className="text-neutral-400">{poll.description}</CardDescription>
-                                                                <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-neutral-400">
-                                                                    <span className="flex items-center gap-1">
-                                                                        <Calendar className="h-4 w-4" />
-                                                                        Ends: {formatDate(poll.endDate)}
-                                                                    </span>
-                                                                    <span className="flex items-center gap-1">
-                                                                        <Users className="h-4 w-4" />
-                                                                        {poll.totalVotes.toLocaleString()} {formatPlural(poll.totalVotes, "vote", "votes")}
-                                                                    </span>
+                                                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                                                                    <Button
+                                                                        onClick={() => navigate(`/polls/${poll.id}/results`)}
+                                                                        className="rounded-xl bg-primary/90 px-5 py-2 text-white transition hover:bg-primary"
+                                                                    >
+                                                                        <Eye className="mr-2 h-4 w-4" />
+                                                                        View details
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="icon"
+                                                                        variant="outline"
+                                                                        className="rounded-xl border-white/15 bg-white/[0.03] text-neutral-300 hover:bg-white/10"
+                                                                        onClick={() => handleExportPoll(poll)}
+                                                                    >
+                                                                        <Download className="h-4 w-4" />
+                                                                    </Button>
                                                                 </div>
                                                             </div>
-                                                            <div className="flex flex-col sm:flex-row gap-2">
-                                                                <Button onClick={() => navigate(`/polls/${poll.id}/results`)}>
-                                                                    <Eye className="h-4 w-4 mr-2" />
-                                                                    View details
-                                                                </Button>
-                                                                <Button
-                                                                    size="icon"
-                                                                    className="border-neutral-700 text-neutral-300"
-                                                                    onClick={() => handleExportPoll(poll)}
-                                                                >
-                                                                    <Download className="h-4 w-4" />
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    </CardHeader>
-                                                    <CardContent>
-                                                        <div className="space-y-4">
-                                                            <div className="flex justify-between items-center">
-                                                                <h4 className="font-semibold text-white">Leading candidates</h4>
+                                                        </CardHeader>
+                                                        <CardContent className="space-y-4 pb-6">
+                                                            <div className="flex items-center justify-between">
+                                                                <h4 className="font-semibold text-white text-sm sm:text-lg">Leading candidates</h4>
                                                                 {poll.results.some((candidate) => candidate.isTie) && (
-                                                                    <Badge variant="secondary" className="bg-yellow-500 text-black border-yellow-400">
+                                                                    <Badge className="rounded-full border border-yellow-400/60 bg-yellow-500/20 px-3 py-1 text-xs text-yellow-200">
                                                                         Tie detected
                                                                     </Badge>
                                                                 )}
                                                             </div>
-                                                            <div className="space-y-3">
+                                                            <div className="space-y-4">
                                                                 {poll.results.slice(0, 3).map((candidate, index) => {
                                                                     const topTie = poll.results.length > 0 && poll.results[0].isTie;
                                                                     const indicatorColor = topTie
@@ -571,14 +621,12 @@ export const Results = () => {
                                                                                 : "bg-amber-500";
                                                                     return (
                                                                         <div key={`${candidate.name}-${index}`} className="space-y-2">
-                                                                            <div className="flex justify-between items-center">
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <div className={`w-3 h-3 rounded-full ${indicatorColor}`} />
-                                                                                    <span className="font-medium text-white">{candidate.name}</span>
-                                                                                    {candidate.isTie && (
-                                                                                        <Badge className="bg-yellow-500 text-black">Tie</Badge>
-                                                                                    )}
-                                                                                    <Badge variant="outline" className="text-xs text-neutral-400">
+                                                                            <div className="flex items-center justify-between gap-4">
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <div className={`h-3 w-3 rounded-full ${indicatorColor}`} />
+                                                                                    <span className="font-medium text-white text-xs sm:text-lg">{candidate.name}</span>
+                                                                                    {candidate.isTie && <Badge className="rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-200">Tie</Badge>}
+                                                                                    <Badge variant="outline" className="border-white/15 text-xs text-neutral-300">
                                                                                         {candidate.party}
                                                                                     </Badge>
                                                                                 </div>
@@ -589,19 +637,19 @@ export const Results = () => {
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
-                                                                            <Progress value={candidate.percentage} className="h-2 bg-neutral-800" />
+                                                                            <Progress value={candidate.percentage} className="h-2 bg-white/10" />
                                                                         </div>
                                                                     );
                                                                 })}
                                                             </div>
-                                                        </div>
-                                                    </CardContent>
-                                                </Card>
-                                            ))
-                                        )}
-                                    </div>
-                                </TabsContent>
-                            </Tabs>
+                                                        </CardContent>
+                                                    </Card>
+                                                ))
+                                            )}
+                                        </div>
+                                    </TabsContent>
+                                </Tabs>
+                            </section>
                         </>
                     )}
                 </div>
@@ -609,6 +657,7 @@ export const Results = () => {
             <Footer />
         </div>
     );
+
 };
 
 export default Results;

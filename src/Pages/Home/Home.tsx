@@ -166,7 +166,7 @@ const Home = () => {
                     </div>
                 </section>
 
-                <section className="container mx-auto max-w-6xl px-6 pb-20">
+                <section className="container mx-auto max-w-6xl px-6 pb-20 mt-5 lg:mt-0">
                     <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
                         <div className="space-y-4">
                             <p className="w-fit rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-xs uppercase tracking-[0.35em] text-primary">
@@ -194,7 +194,7 @@ const Home = () => {
                                 )}
                             </div>
                         </div>
-                        <div className="relative">
+                        <div className="relative mt-5">
                             <div className="pointer-events-none absolute inset-0 rounded-[32px] border border-white/10 bg-white/[0.02]" />
                             <div className="relative grid gap-6 p-6">
                                 {journeySteps.map(({ icon: Icon, title, body }, index) => (
@@ -222,7 +222,7 @@ const Home = () => {
                 <section className="relative overflow-hidden pb-24">
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_60%)]" />
                     <div className="container relative mx-auto max-w-6xl px-6">
-                        <div className="overflow-hidden rounded-[34px] border border-primary/30 bg-gradient-to-br from-primary/20 via-primary/5 to-sky-500/10 p-[1px]">
+                        <div className="overflow-hidden rounded-[34px] mt-5 border border-primary/30 bg-gradient-to-br from-primary/20 via-primary/5 to-sky-500/10 p-[1px]">
                             <div className="rounded-[32px] bg-neutral-950/95 px-8 py-12 shadow-[0_80px_120px_-60px_rgba(30,64,175,0.4)] backdrop-blur">
                                 <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                                     <div className="max-w-xl">
