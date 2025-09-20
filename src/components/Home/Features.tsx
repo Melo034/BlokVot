@@ -1,88 +1,87 @@
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Shield, Users, CheckCircle, Clock } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Card } from "@/components/ui/card";
+import { ShieldCheck, Binary, Signal, LockKeyhole } from "lucide-react";
+import { motion } from "framer-motion";
+
+const pillars = [
+    {
+        icon: ShieldCheck,
+        title: "Provable trust",
+        description:
+            "Every ballot produces a cryptographic receipt so communities never have to blindly trust results again.",
+    },
+    {
+        icon: Binary,
+        title: "Programmable policy",
+        description:
+            "Modular smart-contracts let administrators codify eligibility, weighting, and escalation in minutes.",
+    },
+    {
+        icon: Signal,
+        title: "Real-time observability",
+        description:
+            "Live telemetry streams empower media houses and civil observers with the same data regulators rely on.",
+    },
+    {
+        icon: LockKeyhole,
+        title: "Resilience by design",
+        description:
+            "Guardian rotation, delayed execution, and circuit breakers keep elections safe even under coordinated attack.",
+    },
+];
+
+const containerVariants = {
+    hidden: {},
+    show: {
+        transition: {
+            staggerChildren: 0.08,
+        },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 24 },
+    show: { opacity: 1, y: 0 },
+};
 
 const Features = () => {
     return (
-        <section className=" py-8 md:py-16">
-            <div className="@container mx-auto max-w-5xl px-6">
-                <div className="flex flex-col items-center justify-center space-y-4 text-center">
-                    <div className="space-y-2">
-                        <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-white font-lora">
-                            Why Blockchain Voting?
-                        </h2>
-                        <p className="max-w-[900px] text-neutral-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                            Our system addresses key challenges in traditional voting systems using advanced blockchain
-                            technology.
-                        </p>
-                    </div>
+        <section className="relative overflow-hidden py-16 sm:py-24">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_55%)]" />
+            <div className="container relative mx-auto max-w-6xl px-6">
+                <div className="text-center">
+                    <p className="mx-auto w-fit rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-xs uppercase tracking-[0.35em] text-primary">
+                        Designed for scale
+                    </p>
+                    <h2 className="mt-6 text-pretty text-3xl font-semibold text-white sm:text-4xl lg:text-5xl">
+                        A digital election stack without trade-offs
+                    </h2>
+                    <p className="mx-auto mt-4 max-w-2xl text-base text-neutral-400 sm:text-lg">
+                        BlokVot unifies bulletproof infrastructure with thoughtful voter journeys, giving administrators and citizens equal confidence from registration to final audit.
+                    </p>
                 </div>
-                <Card className="@min-4xl:max-w-full @min-4xl:grid-cols-4 @min-4xl:divide-x @min-4xl:divide-y-0 mx-auto mt-8 grid max-w-sm divide-y overflow-hidden shadow-zinc-950/5 *:text-center md:mt-16">
-                    <div className="group shadow-zinc-950/5">
-                        <CardHeader className="pb-3">
-                            <CardDecorator>
-                                <Shield className="size-6" aria-hidden />
-                            </CardDecorator>
-
-                            <h3 className="mt-6 font-semibold font-pt-serif">Secure & Tamper-Proof</h3>
-                        </CardHeader>
-
-                        <CardContent>
-                            <p className="text-sm font-lexend-deca mb-2">   Votes are securely recorded on the blockchain, making them immune to manipulation or unauthorized changes.</p>
-                        </CardContent>
-                    </div>
-                    <div className="group shadow-zinc-950/5">
-                        <CardHeader className="pb-3">
-                            <CardDecorator>
-                                <CheckCircle className="size-6" aria-hidden />
-                            </CardDecorator>
-
-                            <h3 className="mt-6 font-semibold font-pt-serif">Transparent Verification</h3>
-                        </CardHeader>
-
-                        <CardContent>
-                            <p className=" text-sm font-lexend-deca mb-2">Each vote can be verified by voters without compromising anonymity, ensuring confidence in the election results.</p>
-                        </CardContent>
-                    </div>
-                    <div className="group shadow-zinc-950/5">
-                        <CardHeader className="pb-3">
-                            <CardDecorator>
-                                <Users className="size-6" aria-hidden />
-                            </CardDecorator>
-
-                            <h3 className="mt-6 font-semibold font-pt-serif">Accessible Voting</h3>
-                        </CardHeader>
-
-                        <CardContent>
-                            <p className="text-sm font-lexend-deca">Enables voting from anywhere with internet access, increasing participation especially in remote areas.</p>
-                        </CardContent>
-                    </div>
-
-                    <div className="group shadow-zinc-950/5">
-                        <CardHeader className="pb-3">
-                            <CardDecorator>
-                                <Clock className="size-6" aria-hidden />
-                            </CardDecorator>
-
-                            <h3 className="mt-6 font-semibold font-pt-serif">Real-Time Results</h3>
-                        </CardHeader>
-
-                        <CardContent>
-                            <p className="text-sm font-lexend-deca">Instant counting and tabulation of votes, eliminating delays in announcing election outcomes.</p>
-                        </CardContent>
-                    </div>
-                </Card>
+                <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    whileInView="show"
+                    viewport={{ once: true, margin: "-80px" }}
+                    className="mt-14 grid gap-6 md:grid-cols-2"
+                >
+                    {pillars.map(({ icon: Icon, title, description }) => (
+                        <motion.div key={title} variants={itemVariants}>
+                            <Card className="relative overflow-hidden rounded-[26px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_40px_90px_-45px_rgba(15,23,42,0.7)] backdrop-blur transition hover:border-primary/40 hover:bg-primary/5">
+                                <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                                    <Icon className="h-5 w-5" />
+                                </div>
+                                <h3 className="mt-6 text-xl font-semibold text-white">{title}</h3>
+                                <p className="mt-3 text-sm text-neutral-400">{description}</p>
+                            </Card>
+                        </motion.div>
+                    ))}
+                </motion.div>
             </div>
         </section>
-    )
-}
+    );
+};
 
-export default Features
-
-const CardDecorator = ({ children }: { children: ReactNode }) => (
-    <div className="relative mx-auto size-36 duration-200 [--color-border:color-mix(in_oklab,var(--color-zinc-950)10%,transparent)] group-hover:[--color-border:color-mix(in_oklab,var(--color-zinc-950)20%,transparent)]">
-        <div aria-hidden className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-border)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-border)_1px,transparent_1px)] bg-[size:24px_24px]" />
-        <div aria-hidden className="bg-radial to-background absolute inset-0 from-transparent to-75%" />
-        <div className="bg-background absolute inset-0 m-auto flex size-12 items-center justify-center border-l border-t">{children}</div>
-    </div>
-)
+export default Features;

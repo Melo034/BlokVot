@@ -3,6 +3,7 @@ import { ConnectButton, useActiveAccount } from "thirdweb/react";
 import { darkTheme } from "thirdweb/react";
 import { client, contract } from "@/client";
 import { Menu } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import {
   Accordion,
@@ -112,13 +113,15 @@ const Navbar = ({
 
   return (
     <section
-      className={`py-4 sticky top-0 z-40 w-full bg-neutral-950 transition-all ${
-        hasScrolled ? "border-b border-neutral-600 shadow-sm" : "border-b-0"
-      }`}
+      className={cn(
+        "sticky top-0 z-50 w-full border-b border-transparent bg-neutral-950/60 py-4 transition-all duration-300 supports-[backdrop-filter]:backdrop-blur-xl",
+        hasScrolled && "bg-neutral-950/85 border-white/10 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.9)]"
+      )}
     >
-      <div className="container max-w-screen-xl px-5 mx-auto">
+      <div className="container relative mx-auto max-w-screen-xl px-5">
+        <div className="pointer-events-none absolute inset-0 border border-white/5 mix-blend-overlay" />
         {/* Desktop Menu */}
-        <nav className="hidden justify-between lg:flex">
+        <nav className="relative hidden justify-between lg:flex">
           <div className="flex items-center gap-6">
             <a href={logo.url} className="flex items-center gap-2">
               <img src={logo.src} className="w-32 h-12 object-contain" alt={logo.alt} />
@@ -129,13 +132,13 @@ const Navbar = ({
               </NavigationMenu>
             </div>
           </div>
-          <div className="flex gap-3 font-pt-serif">
-            {showDashboardButton && (
-              <Button className="py-6 px-3 text-sm font-semibold">
-                <a href={Dashboard.login.url}>{Dashboard.login.text}</a>
-              </Button>
-            )}
-            <ConnectButton
+    <div className="flex gap-3 font-pt-serif">
+      {showDashboardButton && (
+        <Button className="py-6 px-3 text-sm font-semibold">
+          <a href={Dashboard.login.url}>{Dashboard.login.text}</a>
+        </Button>
+      )}
+      <ConnectButton
               client={client}
               theme={darkTheme({
                 colors: {
@@ -153,7 +156,7 @@ const Navbar = ({
           </div>
         </nav>
         {/* Mobile Menu */}
-        <div className="block lg:hidden bg-neutral-950">
+        <div className="relative block lg:hidden">
           <div className="flex items-center justify-between">
             <a href={logo.url} className="flex items-center gap-2">
               <img src={logo.src} className="w-32 h-12 object-contain" alt={logo.alt} />
@@ -164,7 +167,7 @@ const Navbar = ({
                   <Menu className="size-4" />
                 </Button>
               </SheetTrigger>
-              <SheetContent className="overflow-y-auto">
+              <SheetContent className="overflow-y-auto border border-white/10 bg-neutral-950/95 backdrop-blur-xl">
                 <SheetHeader>
                   <SheetTitle>
                     <a href={logo.url} className="flex items-center gap-2">
