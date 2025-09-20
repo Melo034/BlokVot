@@ -59,11 +59,9 @@ const StartPoll = () => {
     useEffect(() => {
         const fetchPolls = async () => {
             if (!pollIds || !Array.isArray(pollIds)) {
-                console.log("No pollIds received:", { pollIds });
                 setIsLoading(false);
                 return;
             }
-            console.log("Fetched pollIds:", pollIds.map(id => id.toString()));
             setIsLoading(true);
             const results = await Promise.all(
                 pollIds.map(async (id) => {
@@ -74,20 +72,7 @@ const StartPoll = () => {
                                 "function getPoll(uint256 pollId) view returns (uint256 id, string title, string description, uint256 startTime, uint256 endTime, uint8 status, uint256 totalVotes, uint256 candidateCountOut, uint256 minVotersRequired)",
                             params: [id],
                         });
-                        const candidateDetails = await readContract({
-                            contract,
-                            method: "function getCandidateDetailsForPoll(uint256 pollId) view returns (uint256[] ids, string[] names, string[] parties, string[] imageUrls, string[] descriptions, bool[] isActiveList)",
-                            params: [id],
-                        });
-                        console.log(`Poll ${id}:`, {
-                            id: id.toString(),
-                            title: poll[1],
-                            candidateCount: poll[7].toString(),
-                            minVotersRequired: poll[8].toString(),
-                            actualCandidates: candidateDetails[0].length,
-                            status: poll[6].toString(),
-                        });
-                        const status = parseInt(poll[6].toString());
+                        const status = Number(poll[5]);
                         if (status === PollStatus.CREATED) {
                             return {
                                 id: id.toString(),
@@ -105,7 +90,6 @@ const StartPoll = () => {
                 })
             );
             const filteredPolls = results.filter(Boolean) as Startpoll[];
-            console.log("Filtered polls:", filteredPolls);
             setPolls(filteredPolls);
             setIsLoading(false);
         };

@@ -101,6 +101,16 @@ export const Result = () => {
     const { id } = useParams<{ id: string }>();
     const pollId = id;
     const navigate = useNavigate();
+    const parsedPollId = useMemo<bigint | null>(() => {
+        if (!pollId) {
+            return null;
+        }
+        try {
+            return BigInt(pollId);
+        } catch {
+            return null;
+        }
+    }, [pollId]);
     const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "verification">("overview");
 
     // Fetch poll data
@@ -108,8 +118,8 @@ export const Result = () => {
         contract,
         method:
             "function getPoll(uint256 pollId) view returns (uint256 id, string title, string description, uint256 startTime, uint256 endTime, uint8 status, uint256 totalVotes, uint256 candidateCountOut, uint256 minVotersRequired)",
-        params: [BigInt(pollId || "0")],
-        queryOptions: { enabled: !!pollId && !isNaN(Number(pollId)) },
+        params: [parsedPollId ?? 0n],
+        queryOptions: { enabled: parsedPollId !== null },
     });
 
     // Fetch candidate data
@@ -117,16 +127,16 @@ export const Result = () => {
         contract,
         method:
             "function getCandidateDetailsForPoll(uint256 pollId) view returns (uint256[] ids, string[] names, string[] parties, string[] imageUrls, string[] descriptions, bool[] isActiveList)",
-        params: [BigInt(pollId || "0")],
-        queryOptions: { enabled: !!pollId && !isNaN(Number(pollId)) },
+        params: [parsedPollId ?? 0n],
+        queryOptions: { enabled: parsedPollId !== null },
     });
 
     // Fetch poll results
     const { data: resultsData, isPending: isResultsPending, error: resultsError } = useReadContract({
         contract,
         method: "function getPollResults(uint256 pollId) view returns (uint256[] candidateIds, uint256[] votes)",
-        params: [BigInt(pollId || "0")],
-        queryOptions: { enabled: !!pollId && !isNaN(Number(pollId)) },
+        params: [parsedPollId ?? 0n],
+        queryOptions: { enabled: parsedPollId !== null },
     });
 
     // Memoize poll object
@@ -297,11 +307,21 @@ export const Result = () => {
 
     // Removed unused voteTrend memoized value
 
-    // Handle errors and navigation
     useEffect(() => {
-        if (!pollId || isNaN(Number(pollId))) {
+        if (!pollId) {
             toast.error("Invalid poll ID");
             navigate("/polls");
+            return;
+        }
+        if (parsedPollId === null) {
+            toast.error("Invalid poll ID");
+            navigate("/polls");
+        }
+    }, [pollId, parsedPollId, navigate]);
+
+    // Handle errors and navigation
+    useEffect(() => {
+        if (parsedPollId === null) {
             return;
         }
         if (pollError) {
@@ -327,6 +347,7 @@ export const Result = () => {
         pollError,
         candidatesError,
         resultsError,
+        parsedPollId,
         pollId,
         navigate,
         isCandidatesPending,

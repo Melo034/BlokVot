@@ -92,13 +92,24 @@ export const PollVote = () => {
     const [transactionHash, setTransactionHash] = useState<string | null>(null);
     const [showCandidateInfo, setShowCandidateInfo] = useState<string | null>(null);
 
+    const parsedPollId = useMemo<bigint | null>(() => {
+        if (!id) {
+            return null;
+        }
+        try {
+            return BigInt(id);
+        } catch {
+            return null;
+        }
+    }, [id]);
+
     // Fetch poll data
     const { data: pollData, isPending: isPollPending, error: pollError } = useReadContract({
         contract,
         method:
             "function getPoll(uint256 pollId) view returns (uint256 id, string title, string description, uint256 startTime, uint256 endTime, uint8 status, uint256 totalVotes, uint256 candidateCountOut, uint256 minVotersRequired)",
-        params: [BigInt(id || "0")],
-        queryOptions: { enabled: !!id && !isNaN(Number(id)) },
+        params: [parsedPollId ?? 0n],
+        queryOptions: { enabled: parsedPollId !== null },
     });
 
     // Fetch candidate data
@@ -106,24 +117,24 @@ export const PollVote = () => {
         contract,
         method:
             "function getCandidateDetailsForPoll(uint256 pollId) view returns (uint256[] ids, string[] names, string[] parties, string[] imageUrls, string[] descriptions, bool[] isActiveList)",
-        params: [BigInt(id || "0")],
-        queryOptions: { enabled: !!id && !isNaN(Number(id)) },
+        params: [parsedPollId ?? 0n],
+        queryOptions: { enabled: parsedPollId !== null },
     });
 
     // Check if voter has voted
     const { data: hasVotedData, error: hasVotedError } = useReadContract({
         contract,
         method: "function hasVoted(address voter, uint256 pollId) view returns (bool)",
-        params: [voterAddress ?? "", BigInt(id || "0")],
-        queryOptions: { enabled: !!voterAddress && !!id && !isNaN(Number(id)) },
+        params: [voterAddress ?? "0x0000000000000000000000000000000000000000", parsedPollId ?? 0n],
+        queryOptions: { enabled: !!voterAddress && parsedPollId !== null },
     });
 
     // Check if voter is eligible
     const { data: isEligibleData, error: isEligibleError } = useReadContract({
         contract,
         method: "function isEligibleToVote(address voter, uint256 pollId) view returns (bool)",
-        params: [voterAddress ?? "", BigInt(id || "0")],
-        queryOptions: { enabled: !!voterAddress && !!id && !isNaN(Number(id)) },
+        params: [voterAddress ?? "0x0000000000000000000000000000000000000000", parsedPollId ?? 0n],
+        queryOptions: { enabled: !!voterAddress && parsedPollId !== null },
     });
 
     // Memoize poll object
@@ -165,11 +176,21 @@ export const PollVote = () => {
             .filter(c => c.isActive);
     }, [candidateData, isCandidatesPending, candidatesError]);
 
-    // Handle errors and navigation
     useEffect(() => {
-        if (!id || isNaN(Number(id))) {
+        if (!id) {
             toast.error("Invalid poll ID");
             navigate("/polls");
+            return;
+        }
+        if (parsedPollId === null) {
+            toast.error("Invalid poll ID");
+            navigate("/polls");
+        }
+    }, [id, parsedPollId, navigate]);
+
+    // Handle errors and navigation
+    useEffect(() => {
+        if (parsedPollId === null) {
             return;
         }
         if (pollError) {
@@ -208,7 +229,17 @@ export const PollVote = () => {
             toast.warning("No candidates available for this poll.");
             navigate(`/polls/${id}`);
         }
-    }, [poll, candidates, pollError, candidatesError, hasVotedError, isEligibleError, id, navigate]);
+    }, [
+        poll,
+        candidates,
+        pollError,
+        candidatesError,
+        hasVotedError,
+        isEligibleError,
+        parsedPollId,
+        id,
+        navigate,
+    ]);
 
     // Handlers
     const handleSelectCandidate = (candidateId: string) => {
@@ -420,13 +451,16 @@ export const PollVote = () => {
                                         Change Selection
                                     </Button>
                                     <TransactionButton
-                                        transaction={() =>
-                                            prepareContractCall({
+                                        transaction={() => {
+                                            if (parsedPollId === null) {
+                                                throw new Error("Invalid poll ID");
+                                            }
+                                            return prepareContractCall({
                                                 contract,
                                                 method: "function castVote(uint256 candidateId, uint256 pollId)",
-                                                params: [BigInt(selectedCandidate || "0"), BigInt(id || "0")],
-                                            })
-                                        }
+                                                params: [BigInt(selectedCandidate || "0"), parsedPollId],
+                                            });
+                                        }}
                                         onTransactionSent={() => setIsSubmitting(true)}
                                         onTransactionConfirmed={(receipt) => {
                                             setIsSubmitting(false);
@@ -443,7 +477,7 @@ export const PollVote = () => {
                                             toast.error(`Error: ${message}`);
                                             console.error("Cast vote error:", error);
                                         }}
-                                        disabled={isSubmitting || !selectedCandidate || !poll?.isEligible || poll?.status !== "active"}
+                                        disabled={isSubmitting || parsedPollId === null || !selectedCandidate || !poll?.isEligible || poll?.status !== "active"}
                                         unstyled
                                         className="flex-1 sm:flex-none min-w-[150px] px-6 py-2 rounded-xl bg-primary hover:bg-primary/90 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                     >

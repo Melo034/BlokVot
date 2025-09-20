@@ -56,7 +56,6 @@ const ManageCandidates = () => {
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
-    const [imageFile, setImageFile] = useState<File | null>(null);
     const [showInactive, setShowInactive] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [nameError, setNameError] = useState("");
@@ -69,6 +68,28 @@ const ManageCandidates = () => {
     const [updateDescription, setUpdateDescription] = useState("");
     const [updatePollId, setUpdatePollId] = useState("");
     const [updateImageUrl, setUpdateImageUrl] = useState("");
+
+    const validateImageUrl = (value: string) => {
+        if (!value) {
+            setUrlError("");
+            return true;
+        }
+        if (value.startsWith("ipfs://")) {
+            setUrlError("");
+            return true;
+        }
+        try {
+            const parsed = new URL(value);
+            if (parsed.protocol === "https:") {
+                setUrlError("");
+                return true;
+            }
+        } catch {
+            // handled below
+        }
+        setUrlError("Please enter a valid HTTPS or IPFS URL");
+        return false;
+    };
 
     const { data: pollIds, isPending: isPollsPending } = useReadContract({
         contract,
@@ -96,7 +117,7 @@ const ManageCandidates = () => {
                                     "function getPoll(uint256 pollId) view returns (uint256 id, string title, string description, uint256 startTime, uint256 endTime, uint8 status, uint256 totalVotes, uint256 candidateCountOut, uint256 minVotersRequired)",
                                 params: [id],
                             });
-                            const status = parseInt(poll[6].toString());
+                            const status = Number(poll[5]);
                             if (status === PollStatus.CREATED) {
                                 return {
                                     id: id.toString(),
@@ -165,7 +186,7 @@ const ManageCandidates = () => {
         setIsUpdateModalOpen(true);
         setNameError("");
         setPollError("");
-        setUrlError("");
+        validateImageUrl(candidate.imageUrl);
     };
 
     const resetForm = () => {
@@ -175,7 +196,6 @@ const ManageCandidates = () => {
         setUpdatePollId("");
         setUpdateImageUrl("");
         setSelectedCandidate(null);
-        setImageFile(null);
         setNameError("");
         setPollError("");
         setUrlError("");
@@ -223,7 +243,7 @@ const ManageCandidates = () => {
                                     Manage Candidates
                                 </CardTitle>
                                 <CardDescription className="text-neutral-400">
-                                    Update or remove candidates from polls
+                                    Update || remove candidates from polls
                                 </CardDescription>
                                 <div className="flex items-center gap-2">
                                     <Button
@@ -407,19 +427,22 @@ const ManageCandidates = () => {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label className="flex items-center" htmlFor="update-image">
+                                    <Label className="flex items-center" htmlFor="update-image-url">
                                         <Upload className="h-4 w-4 mr-2" />
-                                        Candidate Image (Optional)
+                                        Candidate Image URL (Optional)
                                     </Label>
                                     <Input
-                                        id="update-image"
+                                        id="update-image-url"
+                                        value={updateImageUrl}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setUpdateImageUrl(value);
+                                            validateImageUrl(value);
+                                        }}
                                         placeholder="https://ipfs.io/ipfs/..."
-                                        onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                                        className="bg-neutral-900 text-white file:text-white file:bg-primary file:border-none file:px-4 file:py-1 file:rounded-md border border-neutral-700"
+                                        className="bg-neutral-900 text-white placeholder:text-neutral-500 border border-neutral-700"
+                                        aria-describedby="url-error"
                                     />
-                                    {updateImageUrl && (
-                                        <p className="text-sm text-neutral-400">Current: {updateImageUrl}</p>
-                                    )}
                                     {urlError && (
                                         <p id="url-error" className="text-sm text-red-500">
                                             {urlError}
@@ -448,11 +471,8 @@ const ManageCandidates = () => {
                                 Cancel
                             </Button>
                             <TransactionButton
-                                transaction={async () => {
-                                    const imageUrl = imageFile
-                                        ? updateImageUrl || selectedCandidate?.imageUrl || ""
-                                        : updateImageUrl || selectedCandidate?.imageUrl || "";
-                                    return prepareContractCall({
+                                transaction={() =>
+                                    prepareContractCall({
                                         contract,
                                         method:
                                             "function updateCandidate(uint256 candidateId, string name, string party, string imageUrl, string description, uint256 pollId)",
@@ -460,12 +480,12 @@ const ManageCandidates = () => {
                                             BigInt(selectedCandidate!.id),
                                             updateName,
                                             updateParty,
-                                            imageUrl,
+                                            updateImageUrl.trim() || selectedCandidate?.imageUrl || "",
                                             updateDescription,
                                             BigInt(updatePollId),
                                         ],
-                                    });
-                                }}
+                                    })
+                                }
                                 onTransactionSent={() => setIsUpdating(true)}
                                 onTransactionConfirmed={() => {
                                     toast.success("Candidate updated successfully!");
@@ -479,7 +499,7 @@ const ManageCandidates = () => {
                                                     description: updateDescription,
                                                     pollId: updatePollId,
                                                     pollTitle: polls.find(p => p.id === updatePollId)?.title || c.pollTitle,
-                                                    imageUrl: imageFile ? updateImageUrl : c.imageUrl,
+                                                    imageUrl: updateImageUrl.trim() || c.imageUrl,
                                                 }
                                                 : c
                                         )
@@ -509,6 +529,7 @@ const ManageCandidates = () => {
                                     "Update Candidate"
                                 )}
                             </TransactionButton>
+
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>

@@ -31,9 +31,15 @@ import BackButton from "@/components/utils/BackButton";
 
 // Utility to validate URLs
 const isValidUrl = (url: string) => {
+    if (!url) {
+        return true;
+    }
+    if (url.startsWith("ipfs://")) {
+        return true;
+    }
     try {
-        new URL(url);
-        return url.startsWith("https://");
+        const parsed = new URL(url);
+        return parsed.protocol === "https:";
     } catch {
         return false;
     }
@@ -74,7 +80,7 @@ const AddCandidates = () => {
                                     "function getPoll(uint256 pollId) view returns (uint256 id, string title, string description, uint256 startTime, uint256 endTime, uint8 status, uint256 totalVotes, uint256 candidateCountOut, uint256 minVotersRequired)",
                                 params: [id],
                             });
-                            const status = parseInt(poll[6].toString());
+                            const status = Number(poll[5]);
                             if (status === PollStatus.CREATED) {
                                 return {
                                     id: id.toString(),
