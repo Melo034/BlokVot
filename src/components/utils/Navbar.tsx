@@ -164,7 +164,7 @@ const Navbar = ({
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon">
-                  <Menu className="size-4" />
+                  <Menu className="size-4 text-neutral-950 hover:text-primary" />
                 </Button>
               </SheetTrigger>
               <SheetContent className="overflow-y-auto border border-white/10 bg-neutral-950/95 backdrop-blur-xl">
@@ -258,7 +258,7 @@ const renderMobileMenuItem = (item: MenuItem) => {
   }
 
   return (
-    <a key={item.title} href={item.url} className="text-md font-semibold">
+    <a key={item.title} href={item.url} className="text-md font-semibold text-white transition-colors hover:text-primary hover:no-underline">
       {item.title}
     </a>
   );
