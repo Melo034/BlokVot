@@ -212,6 +212,14 @@ export const Result = () => {
         return tieVotes.has(candidates[0].votes);
     }, [candidates, tieVotes]);
 
+    const topCandidate = candidates.length > 0 ? candidates[0] : null;
+    const showOutcomeBanner = Boolean(poll?.status === "ended" && topCandidate);
+    const winnerVoteLabel = topCandidate
+        ? `${topCandidate.votes.toLocaleString()} ${formatPlural(topCandidate.votes, "vote", "votes")}`
+        : "";
+    const winnerPercentLabel = topCandidate ? `${topCandidate.percentage}%` : "--";
+    const winnerName = topCandidate ? topCandidate.name : "--";
+
     const voteShareData = useMemo(() => {
         return candidates
             .map((candidate) => ({
@@ -590,6 +598,34 @@ export const Result = () => {
                                             <p className="text-neutral-400 text-center">No candidates available</p>
                                         ) : (
                                             <div className="space-y-6">
+                                                {showOutcomeBanner && (
+                                                    <div
+                                                        className={`flex items-center justify-between rounded-xl border px-4 py-3 ${isTopTie ? "border-yellow-400/60 bg-yellow-500/10" : "border-emerald-400/40 bg-emerald-500/10"}`}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            {isTopTie ? (
+                                                                <Badge className="bg-yellow-500 text-black">Tie</Badge>
+                                                            ) : (
+                                                                <CheckCircle className="h-5 w-5 text-emerald-300" />
+                                                            )}
+                                                            <div>
+                                                                <p className="text-sm font-medium text-white">
+                                                                    {isTopTie ? "Top spot tied" : `${winnerName} wins`}
+                                                                </p>
+                                                                <p className="text-xs text-neutral-300">
+                                                                    {isTopTie
+                                                                        ? "Multiple candidates share the highest vote count."
+                                                                        : `${winnerVoteLabel} • ${winnerPercentLabel} of total votes`}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        {!isTopTie && (
+                                                            <Badge variant="outline" className="border-emerald-400/40 bg-emerald-500/15 text-emerald-100">
+                                                                Winner
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 {candidates.map((candidate, index) => (
                                                     <div
                                                         key={candidate.id}

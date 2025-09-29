@@ -517,7 +517,11 @@ export const PollVote = () => {
                                     <div className="rounded-md bg-neutral-900 p-4 space-y-2">
                                         <div className="text-sm text-neutral-300">
                                             <span className="font-medium">Transaction ID:</span>
-                                            <div className="font-mono text-xs break-all mt-1">{transactionHash || "N/A"}</div>
+                                            <div className="font-mono text-xs mt-1 break-all break-words max-w-full"
+                                                style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
+                                            >
+                                                {transactionHash || "N/A"}
+                                            </div>
                                         </div>
                                         <div className="text-sm text-neutral-300">
                                             <span className="font-medium">Block Number:</span>

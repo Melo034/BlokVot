@@ -70,6 +70,9 @@ export interface PollDetails {
   description: string;
   candidateCount: number;
   status: PollStatus;
+  contractStatus: PollStatus;
+  startTime: number;
+  endTime: number;
   imageUrl: string;
   createdAt: string;
   minVotersRequired: number;
@@ -79,6 +82,9 @@ export interface DashboardPoll {
   id: string;
   title: string;
   status: PollStatus;
+  contractStatus: PollStatus;
+  startTime: number;
+  endTime: number;
   candidateCount: number;
   totalVotes: number;
   minVotersRequired: number;

@@ -156,7 +156,7 @@ const HowItWorks = () => {
                                 <h2 className="text-3xl font-semibold sm:text-4xl">Spin up your next election on BlokVot</h2>
                                 <p className="mx-auto mt-4 max-w-2xl text-neutral-300">
                                     Our deployment specialists will guide your team through pilots, data migration, compliance reviews, and
-                                    live launch within weeks�not months.
+                                    live launch within weeks not months.
                                 </p>
                                 <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
                                     <Button asChild size="lg" variant="outline" className="rounded-full border-white/30 px-6 text-white bg-neutral-900/30 hover:bg-neutral-900/50 hover:text-white">

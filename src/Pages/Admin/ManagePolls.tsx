@@ -43,6 +43,7 @@ import { Vote, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import ConnButton from "./ConnButton";
 import { PollStatus } from "@/types";
+import { getEffectiveContractPollStatus } from "@/lib/poll-status";
 import type { PollDetails } from "@/types";
 import Loading from "@/components/utils/Loading";
 import BackButton from "@/components/utils/BackButton";
@@ -82,7 +83,6 @@ const ManagePolls = () => {
     // Form state
     const [updateTitle, setUpdateTitle] = useState("");
     const [updateDescription, setUpdateDescription] = useState("");
-    const [updateStatus, setUpdateStatus] = useState<PollStatus>(PollStatus.CREATED);
     const [updateMinVotersRequired, setUpdateMinVotersRequired] = useState("");
     const [updateImageUrl, setUpdateImageUrl] = useState("");
 
@@ -111,14 +111,22 @@ const ManagePolls = () => {
                                     "function getPoll(uint256 pollId) view returns (uint256 id, string title, string description, uint256 startTime, uint256 endTime, uint8 status, uint256 totalVotes, uint256 candidateCountOut, uint256 minVotersRequired)",
                                 params: [id],
                             });
+                            const startTime = Number(poll[3]);
+                            const endTime = Number(poll[4]);
+                            const contractStatus = parseInt(poll[5].toString()) as PollStatus;
+                            const status = getEffectiveContractPollStatus(startTime, endTime, contractStatus);
+
                             return {
                                 id: id.toString(),
                                 title: poll[1],
                                 description: poll[2],
                                 candidateCount: Number(poll[7]),
-                                status: parseInt(poll[5].toString()) as PollStatus,
+                                status,
+                                contractStatus,
+                                startTime,
+                                endTime,
                                 imageUrl: "",
-                                createdAt: new Date(Number(poll[3]) * 1000).toISOString().split('T')[0],
+                                createdAt: new Date(startTime * 1000).toISOString().split('T')[0],
                                 minVotersRequired: Number(poll[8]),
                             };
                         } catch (err) {
@@ -144,7 +152,6 @@ const ManagePolls = () => {
         setSelectedPoll(poll);
         setUpdateTitle(poll.title);
         setUpdateDescription(poll.description);
-        setUpdateStatus(poll.status);
         setUpdateMinVotersRequired(poll.minVotersRequired.toString());
         setUpdateImageUrl(poll.imageUrl);
         setIsUpdateModalOpen(true);
@@ -155,7 +162,6 @@ const ManagePolls = () => {
     const resetForm = () => {
         setUpdateTitle("");
         setUpdateDescription("");
-        setUpdateStatus(PollStatus.CREATED);
         setUpdateMinVotersRequired("");
         setUpdateImageUrl("");
         setSelectedPoll(null);
@@ -288,7 +294,17 @@ const ManagePolls = () => {
                                                                         toast.success("Poll ended successfully");
                                                                         setPolls(prev =>
                                                                             prev.map(p =>
-                                                                                p.id === poll.id ? { ...p, status: PollStatus.ENDED } : p
+                                                                                p.id === poll.id
+                                                                                    ? {
+                                                                                        ...p,
+                                                                                        contractStatus: PollStatus.ENDED,
+                                                                                        status: getEffectiveContractPollStatus(
+                                                                                            p.startTime,
+                                                                                            p.endTime,
+                                                                                            PollStatus.ENDED,
+                                                                                        ),
+                                                                                    }
+                                                                                    : p
                                                                             )
                                                                         );
                                                                     }}
@@ -301,7 +317,7 @@ const ManagePolls = () => {
                                                                     }}
                                                                     unstyled
                                                                     className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                                                                    disabled={poll.status !== PollStatus.ACTIVE}
+                                                                    disabled={poll.contractStatus !== PollStatus.ACTIVE}
                                                                     aria-label={`End ${poll.title}`}
                                                                 >
                                                                     <Trash2 className="h-4 w-4" />
@@ -398,18 +414,28 @@ const ManagePolls = () => {
                                 onTransactionConfirmed={() => {
                                     toast.success("Poll updated successfully!");
                                     setPolls(prev =>
-                                        prev.map(p =>
-                                            p.id === selectedPoll?.id
-                                                ? {
-                                                    ...p,
-                                                    title: updateTitle,
-                                                    description: updateDescription,
-                                                    status: updateStatus,
-                                                    minVotersRequired: Number(updateMinVotersRequired),
-                                                    imageUrl: imageFile ? updateImageUrl : p.imageUrl,
-                                                }
-                                                : p
-                                        )
+                                        prev.map(p => {
+                                            if (p.id !== selectedPoll?.id) {
+                                                return p;
+                                            }
+
+                                            const updatedPoll = {
+                                                ...p,
+                                                title: updateTitle,
+                                                description: updateDescription,
+                                                minVotersRequired: Number(updateMinVotersRequired),
+                                                imageUrl: imageFile ? updateImageUrl : p.imageUrl,
+                                            };
+
+                                            return {
+                                                ...updatedPoll,
+                                                status: getEffectiveContractPollStatus(
+                                                    updatedPoll.startTime,
+                                                    updatedPoll.endTime,
+                                                    updatedPoll.contractStatus,
+                                                ),
+                                            };
+                                        })
                                     );
                                     setIsUpdateModalOpen(false);
                                     resetForm();

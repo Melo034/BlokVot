@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Clock, Download, Users, Eye, Calendar, Sparkles, BarChart3 } from "lucide-react";
+import { Clock, Download, Users, Eye, Calendar, Sparkles, BarChart3, CheckCircle } from "lucide-react";
 import { Navbar } from "@/components/utils/Navbar";
 import { Footer } from "@/components/utils/Footer";
 import Loading from "@/components/utils/Loading";
@@ -557,10 +557,21 @@ export const Results = () => {
                                                     </CardContent>
                                                 </Card>
                                             ) : (
-                                                filteredPolls.map((poll) => (
-                                                    <Card
-                                                        key={poll.id}
-                                                        className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] shadow-[0_60px_120px_-90px_rgba(59,130,246,0.45)] transition hover:border-primary/40 hover:bg-primary/5"
+                                                filteredPolls.map((poll) => {
+                                                    const topCandidate = poll.results[0];
+                                                    const hasTopCandidate = Boolean(topCandidate);
+                                                    const isTieForFirst = Boolean(topCandidate?.isTie);
+                                                    const showOutcomeBanner = poll.status === "ended" && hasTopCandidate;
+                                                    const winnerVoteLabel = hasTopCandidate
+                                                        ? `${topCandidate.votes.toLocaleString()} ${formatPlural(topCandidate.votes, "vote", "votes")}`
+                                                        : "";
+                                                    const winnerPercentLabel = hasTopCandidate ? `${topCandidate.percentage}%` : "--";
+                                                    const winnerName = hasTopCandidate ? topCandidate.name : "--";
+
+                                                    return (
+                                                        <Card
+                                                            key={poll.id}
+                                                            className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] shadow-[0_60px_120px_-90px_rgba(59,130,246,0.45)] transition hover:border-primary/40 hover:bg-primary/5"
                                                     >
                                                         <CardHeader className="pb-4">
                                                             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -592,7 +603,7 @@ export const Results = () => {
                                                                     <Button
                                                                         size="icon"
                                                                         variant="outline"
-                                                                        className="rounded-xl border-white/15 bg-white/[0.03] text-neutral-300 hover:bg-white/10"
+                                                                        className="rounded-xl border-white/15 bg-white/[0.03] hover:text-white text-neutral-300 hover:bg-white/10"
                                                                         onClick={() => handleExportPoll(poll)}
                                                                     >
                                                                         <Download className="h-4 w-4" />
@@ -601,6 +612,34 @@ export const Results = () => {
                                                             </div>
                                                         </CardHeader>
                                                         <CardContent className="space-y-4 pb-6">
+                                                            {showOutcomeBanner && (
+                                                                <div
+                                                                    className={`flex items-center justify-between rounded-xl border px-4 py-3 ${isTieForFirst ? "border-yellow-400/60 bg-yellow-500/10" : "border-emerald-400/40 bg-emerald-500/10"}`}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        {isTieForFirst ? (
+                                                                            <Badge className="bg-yellow-500 text-black">Tie</Badge>
+                                                                        ) : (
+                                                                            <CheckCircle className="h-5 w-5 text-emerald-300" />
+                                                                        )}
+                                                                        <div>
+                                                                            <p className="text-sm font-medium text-white">
+                                                                                {isTieForFirst ? "Top spot tied" : `${winnerName} wins`}
+                                                                            </p>
+                                                                            <p className="text-xs text-neutral-300">
+                                                                                {isTieForFirst
+                                                                                    ? "Multiple candidates share the highest vote count."
+                                                                                    : `${winnerVoteLabel} � ${winnerPercentLabel} of total votes`}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    {!isTieForFirst && (
+                                                                        <Badge variant="outline" className="border-emerald-400/40 bg-emerald-500/15 text-emerald-100">
+                                                                            Winner
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                             <div className="flex items-center justify-between">
                                                                 <h4 className="font-semibold text-white text-sm sm:text-lg">Leading candidates</h4>
                                                                 {poll.results.some((candidate) => candidate.isTie) && (
@@ -644,7 +683,8 @@ export const Results = () => {
                                                             </div>
                                                         </CardContent>
                                                     </Card>
-                                                ))
+                                                );
+                                                })
                                             )}
                                         </div>
                                     </TabsContent>

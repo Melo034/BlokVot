@@ -29,6 +29,7 @@ import { Users, Vote, UserCheck, CheckCircle, Settings, XCircle} from "lucide-re
 import { toast } from "sonner";
 import ConnButton from "./ConnButton";
 import { PollStatus } from "@/types";
+import { getEffectiveContractPollStatus } from "@/lib/poll-status";
 import type { DashboardPoll } from "@/types";
 import Loading from "@/components/utils/Loading";
 import BackButton from "@/components/utils/BackButton";
@@ -110,10 +111,18 @@ const Dashboard = () => {
                                     "function getPoll(uint256 pollId) view returns (uint256 id, string title, string description, uint256 startTime, uint256 endTime, uint8 status, uint256 totalVotes, uint256 candidateCountOut, uint256 minVotersRequired)",
                                 params: [id],
                             });
+                            const startTime = Number(poll[3]);
+                            const endTime = Number(poll[4]);
+                            const contractStatus = parseInt(poll[5].toString()) as PollStatus;
+                            const status = getEffectiveContractPollStatus(startTime, endTime, contractStatus);
+
                             return {
                                 id: id.toString(),
                                 title: poll[1],
-                                status: parseInt(poll[5].toString()) as PollStatus,
+                                status,
+                                contractStatus,
+                                startTime,
+                                endTime,
                                 candidateCount: Number(poll[7]),
                                 totalVotes: Number(poll[6]),
                                 minVotersRequired: Number(poll[8]),
@@ -300,7 +309,15 @@ const Dashboard = () => {
                                                     setPolls(prev =>
                                                         prev.map(p =>
                                                             p.id === managePollId
-                                                                ? { ...p, status: PollStatus.FINALIZED }
+                                                                ? {
+                                                                    ...p,
+                                                                    contractStatus: PollStatus.FINALIZED,
+                                                                    status: getEffectiveContractPollStatus(
+                                                                        p.startTime,
+                                                                        p.endTime,
+                                                                        PollStatus.FINALIZED,
+                                                                    ),
+                                                                }
                                                                 : p
                                                         )
                                                     );
@@ -355,7 +372,15 @@ const Dashboard = () => {
                                                     setPolls(prev =>
                                                         prev.map(p =>
                                                             p.id === managePollId
-                                                                ? { ...p, status: PollStatus.ENDED }
+                                                                ? {
+                                                                    ...p,
+                                                                    contractStatus: PollStatus.ENDED,
+                                                                    status: getEffectiveContractPollStatus(
+                                                                        p.startTime,
+                                                                        p.endTime,
+                                                                        PollStatus.ENDED,
+                                                                    ),
+                                                                }
                                                                 : p
                                                         )
                                                     );
