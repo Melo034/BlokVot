@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, type JSX } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useReadContract, useActiveAccount } from "thirdweb/react";
 import { contract } from "@/client";
@@ -11,7 +11,6 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Vote, ChevronRight, Users, Clock, BarChart3, Calendar } from "lucide-react";
@@ -22,54 +21,7 @@ import { Footer } from "@/components/utils/Footer";
 import type { Poll } from "@/types";
 import Loading from "@/components/utils/Loading";
 import { getDerivedPollStatus } from "@/lib/poll-status";
-
-// Helper function to format timestamp to locale string
-const formatDateTime = (timestamp: number): string => {
-    return new Date(timestamp * 1000).toLocaleString();
-};
-
-// Helper function to calculate time remaining or until start
-const getTimeDisplay = (
-    startTime: number,
-    endTime: number,
-    status: Poll["status"]
-): { remaining: string | null; untilStart: string | null } => {
-    const now = Date.now() / 1000;
-    const remainingSeconds = endTime - now;
-    const untilStartSeconds = startTime - now;
-
-    if (status === "ended" || remainingSeconds <= 0) {
-        return { remaining: "Ended", untilStart: null };
-    }
-
-    if (status === "upcoming" && untilStartSeconds > 0) {
-        const days = Math.floor(untilStartSeconds / (24 * 60 * 60));
-        const hours = Math.floor((untilStartSeconds % (24 * 60 * 60)) / (60 * 60));
-        const minutes = Math.floor((untilStartSeconds % (60 * 60)) / 60);
-        if (days > 0) return { remaining: null, untilStart: `${days}d ${hours}h until start` };
-        if (hours > 0) return { remaining: null, untilStart: `${hours}h ${minutes}m until start` };
-        return { remaining: null, untilStart: `${minutes}m until start` };
-    }
-
-    const days = Math.floor(remainingSeconds / (24 * 60 * 60));
-    const hours = Math.floor((remainingSeconds % (24 * 60 * 60)) / (60 * 60));
-    const minutes = Math.floor((remainingSeconds % (60 * 60)) / 60);
-    if (days > 0) return { remaining: `${days}d ${hours}h remaining`, untilStart: null };
-    if (hours > 0) return { remaining: `${hours}h ${minutes}m remaining`, untilStart: null };
-    return { remaining: `${minutes}m remaining`, untilStart: null };
-};
-
-// Helper function to get status badge
-const getStatusBadge = (status: Poll["status"]): JSX.Element => {
-    switch (status) {
-        case "active":
-            return <Badge className="bg-green-500 text-white">Active</Badge>;
-        case "upcoming":
-            return <Badge className="bg-blue-500 text-white">Upcoming</Badge>;
-        default:
-            return <Badge variant="outline" className="text-neutral-400">Ended</Badge>;
-    }
-};
+import { formatDateTime, getTimeDisplay, getStatusBadge } from "@/lib/poll-helpers";
 
 // Component to fetch and process individual poll data
 const PollItem = ({
@@ -372,10 +324,10 @@ export const Polls = () => {
                                             <TabsTrigger value="active" className="w-full rounded-xl px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
                                                 Active
                                             </TabsTrigger>
-                                            <TabsTrigger value="upcoming" className="w-full rounded-xl mt-3 sm:mt-0 px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
+                                            <TabsTrigger value="upcoming" className="w-full rounded-xl px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
                                                 Upcoming
                                             </TabsTrigger>
-                                            <TabsTrigger value="completed" className="w-full rounded-xl mt-3 sm:mt-0 px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
+                                            <TabsTrigger value="completed" className="w-full rounded-xl px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
                                                 Completed
                                             </TabsTrigger>
                                         </TabsList>

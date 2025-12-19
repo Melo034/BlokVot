@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef, type JSX } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useReadContract } from "thirdweb/react";
 import { contract } from "@/client";
@@ -15,55 +15,13 @@ import { Footer } from "@/components/utils/Footer";
 import Loading from "@/components/utils/Loading";
 import type { Poll, Candidate } from "@/types";
 import { getDerivedPollStatus } from "@/lib/poll-status";
-
-const toNumber = (value: number | bigint): number => (typeof value === "bigint" ? Number(value) : value);
-
-const formatPlural = (count: number | bigint, singular: string, plural?: string): string => {
-    const numeric = Math.abs(toNumber(count));
-    const label = numeric <= 1 ? singular : plural ?? `${singular}s`;
-    return label;
-};
-
-const formatCountLabel = (count: number | bigint, singular: string, plural?: string): string => {
-    const numeric = toNumber(count);
-    return `${numeric.toLocaleString()} ${formatPlural(numeric, singular, plural)}`;
-};
-
-const formatCompactNumber = (value: number | bigint): string => {
-    const numeric = toNumber(value);
-    return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(numeric);
-};
-
-const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    });
-};
-
-const getStatusBadge = (status: "upcoming" | "active" | "ended"): JSX.Element => {
-    switch (status) {
-        case "active":
-            return (
-                <Badge className="rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-emerald-200">
-                    Active
-                </Badge>
-            );
-        case "ended":
-            return (
-                <Badge className="rounded-full border border-white/20 bg-white/[0.06] px-3 py-1 text-neutral-300">
-                    Ended
-                </Badge>
-            );
-        default:
-            return (
-                <Badge className="rounded-full border border-sky-500/30 bg-sky-500/15 px-3 py-1 text-sky-200">
-                    Upcoming
-                </Badge>
-            );
-    }
-};
+import {
+    formatPlural,
+    formatCountLabel,
+    formatCompactNumber,
+    formatDate,
+    getStatusBadge
+} from "@/lib/poll-helpers";
 
 type PollResultEntry = Poll & {
     results: Array<{
@@ -519,7 +477,7 @@ export const Results = () => {
                                             </TabsTrigger>
                                             <TabsTrigger
                                                 value="ended"
-                                                className="flex-1 min-w-[80px] mt-3 sm:mt-0 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:flex-initial"
+                                                className="flex-1 min-w-[80px] rounded-lg px-3 py-1.5 text-xs sm:text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:flex-initial"
                                             >
                                                 Completed ({formatCountLabel(summaryStats.endedCount, "result", "results")})
                                             </TabsTrigger>
@@ -560,8 +518,9 @@ export const Results = () => {
                                                 filteredPolls.map((poll) => {
                                                     const topCandidate = poll.results[0];
                                                     const hasTopCandidate = Boolean(topCandidate);
+                                                    const hasVotes = poll.totalVotes > 0;
                                                     const isTieForFirst = Boolean(topCandidate?.isTie);
-                                                    const showOutcomeBanner = poll.status === "ended" && hasTopCandidate;
+                                                    const showOutcomeBanner = poll.status === "ended" && hasTopCandidate && hasVotes;
                                                     const winnerVoteLabel = hasTopCandidate
                                                         ? `${topCandidate.votes.toLocaleString()} ${formatPlural(topCandidate.votes, "vote", "votes")}`
                                                         : "";
@@ -629,7 +588,7 @@ export const Results = () => {
                                                                             <p className="text-xs text-neutral-300">
                                                                                 {isTieForFirst
                                                                                     ? "Multiple candidates share the highest vote count."
-                                                                                    : `${winnerVoteLabel} � ${winnerPercentLabel} of total votes`}
+                                                                                    : `${winnerVoteLabel} • ${winnerPercentLabel} of total votes`}
                                                                             </p>
                                                                         </div>
                                                                     </div>

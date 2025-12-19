@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type JSX } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useReadContract, useActiveAccount } from "thirdweb/react";
 import { prepareContractCall } from "thirdweb";
@@ -25,7 +25,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Clock, CheckCircle, AlertCircle, Info, ChevronRight, ChevronLeft } from "lucide-react";
@@ -33,53 +32,9 @@ import { toast } from "sonner";
 import { Navbar } from "@/components/utils/Navbar";
 import { Footer } from "@/components/utils/Footer";
 import Loading from "@/components/utils/Loading";
-import type { Poll } from "@/types";
+import type { Poll, Candidate } from "@/types";
 import { getDerivedPollStatus } from "@/lib/poll-status";
-
-// Define Candidate type based on getCandidateDetailsForPoll
-interface Candidate {
-    id: string;
-    name: string;
-    party: string;
-    imageUrl: string;
-    description: string;
-    isActive: boolean;
-}
-
-// Helper function to format time remaining or until start
-const getTimeDisplay = (startTime: number, endTime: number, status: Poll["status"]): string => {
-    const now = Date.now() / 1000;
-    const remainingSeconds = endTime - now;
-    const untilStartSeconds = startTime - now;
-
-    if (status === "ended" || remainingSeconds <= 0) return "Ended";
-    if (status === "upcoming" && untilStartSeconds > 0) {
-        const days = Math.floor(untilStartSeconds / (24 * 60 * 60));
-        const hours = Math.floor((untilStartSeconds % (24 * 60 * 60)) / (60 * 60));
-        const minutes = Math.floor((untilStartSeconds % (60 * 60)) / 60);
-        if (days > 0) return `${days}d ${hours}h until start`;
-        if (hours > 0) return `${hours}h ${minutes}m until start`;
-        return `${minutes}m until start`;
-    }
-    const days = Math.floor(remainingSeconds / (24 * 60 * 60));
-    const hours = Math.floor((remainingSeconds % (24 * 60 * 60)) / (60 * 60));
-    const minutes = Math.floor((remainingSeconds % (60 * 60)) / 60);
-    if (days > 0) return `${days}d ${hours}h remaining`;
-    if (hours > 0) return `${hours}h ${minutes}m remaining`;
-    return `${minutes}m remaining`;
-};
-
-// Helper function to get status badge
-const getStatusBadge = (status: Poll["status"]): JSX.Element => {
-    switch (status) {
-        case "active":
-            return <Badge className="bg-green-500 text-white">Active</Badge>;
-        case "upcoming":
-            return <Badge className="bg-blue-500 text-white">Upcoming</Badge>;
-        default:
-            return <Badge variant="outline" className="text-neutral-400">Ended</Badge>;
-    }
-};
+import { getStatusBadge, getTimeDisplayString, resolveImageUrl, getInitials } from "@/lib/poll-helpers";
 
 export const PollVote = () => {
     const { id } = useParams<{ id: string }>();
@@ -165,16 +120,20 @@ export const PollVote = () => {
     const candidates = useMemo<Candidate[]>(() => {
         if (!candidateData || isCandidatesPending || candidatesError) return [];
         return candidateData[0]
-            .map((_, index) => ({
-                id: candidateData[0][index].toString(),
+            .map((candidateId, index) => ({
+                id: candidateId.toString(),
                 name: candidateData[1][index],
                 party: candidateData[2][index],
                 imageUrl: candidateData[3][index] || "/placeholder.svg",
                 description: candidateData[4][index],
                 isActive: candidateData[5][index],
+                votes: 0, // Not used in voting page
+                percentage: 0, // Not used in voting page
+                pollId: poll?.id || "",
+                pollTitle: poll?.title || "",
             }))
             .filter(c => c.isActive);
-    }, [candidateData, isCandidatesPending, candidatesError]);
+    }, [candidateData, isCandidatesPending, candidatesError, poll]);
 
     useEffect(() => {
         if (!id) {
@@ -306,7 +265,7 @@ export const PollVote = () => {
                         <div className="flex flex-wrap items-center justify-between gap-2 py-2">
                             <div className="flex items-center gap-2 text-sm text-neutral-400">
                                 <Clock className="h-4 w-4 text-green-500" />
-                                <span>{getTimeDisplay(poll.startTime, poll.endTime, poll.status)}</span>
+                                <span>{getTimeDisplayString(poll.startTime, poll.endTime, poll.status)}</span>
                             </div>
                         </div>
                         <div className="mb-6">
@@ -358,12 +317,9 @@ export const PollVote = () => {
                                                         <div className="flex flex-1 items-center justify-between">
                                                             <div className="flex items-center gap-3">
                                                                 <Avatar>
-                                                                    <AvatarImage src={candidate.imageUrl} alt={candidate.name} />
+                                                                    <AvatarImage src={resolveImageUrl(candidate.imageUrl)} alt={candidate.name} />
                                                                     <AvatarFallback>
-                                                                        {candidate.name
-                                                                            .split(" ")
-                                                                            .map((n) => n[0])
-                                                                            .join("")}
+                                                                        {getInitials(candidate.name)}
                                                                     </AvatarFallback>
                                                                 </Avatar>
                                                                 <Label htmlFor={candidate.id} className="flex flex-col cursor-pointer">
@@ -414,12 +370,9 @@ export const PollVote = () => {
                                     <div className="rounded-md border border-neutral-700 p-4">
                                         <div className="flex items-center gap-4">
                                             <Avatar className="h-16 w-16">
-                                                <AvatarImage src={getSelectedCandidate()?.imageUrl} alt={getSelectedCandidate()?.name} />
+                                                <AvatarImage src={resolveImageUrl(getSelectedCandidate()?.imageUrl || "")} alt={getSelectedCandidate()?.name} />
                                                 <AvatarFallback className="text-lg">
-                                                    {getSelectedCandidate()
-                                                        ?.name.split(" ")
-                                                        .map((n) => n[0])
-                                                        .join("")}
+                                                    {getInitials(getSelectedCandidate()?.name || "")}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div>
@@ -566,12 +519,9 @@ export const PollVote = () => {
                         </DialogHeader>
                         <div className="flex flex-col items-center space-y-4 py-4">
                             <Avatar className="h-24 w-24">
-                                <AvatarImage src={getCandidateInfo(showCandidateInfo)?.imageUrl} alt={getCandidateInfo(showCandidateInfo)?.name} />
+                                <AvatarImage src={resolveImageUrl(getCandidateInfo(showCandidateInfo)?.imageUrl || "")} alt={getCandidateInfo(showCandidateInfo)?.name} />
                                 <AvatarFallback className="text-2xl">
-                                    {getCandidateInfo(showCandidateInfo)
-                                        ?.name.split(" ")
-                                        .map((n) => n[0])
-                                        .join("")}
+                                    {getInitials(getCandidateInfo(showCandidateInfo)?.name || "")}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="text-center">

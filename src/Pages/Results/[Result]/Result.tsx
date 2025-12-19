@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type JSX, type ReactNode } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useReadContract } from "thirdweb/react";
 import { contract } from "@/client";
@@ -28,6 +28,14 @@ import type { Poll, Candidate, PollAnalytics } from "@/types";
 import Loading from "@/components/utils/Loading";
 import { getDerivedPollStatus } from "@/lib/poll-status";
 import {
+    formatPlural,
+    resolveImageUrl,
+    getInitials,
+    formatDateTime,
+    formatDuration,
+    getStatusBadge
+} from "@/lib/poll-helpers";
+import {
     ResponsiveContainer,
     XAxis,
     YAxis,
@@ -40,62 +48,6 @@ import {
     Cell,
     LabelList,
 } from "recharts";
-
-const toNumber = (value: number | bigint): number => (typeof value === "bigint" ? Number(value) : value);
-
-const formatPlural = (count: number | bigint, singular: string, plural?: string): string => {
-    const numeric = Math.abs(toNumber(count));
-    const label = numeric <= 1 ? singular : plural ?? `${singular}s`;
-    return label;
-};
-
-// Helper function to resolve IPFS URLs
-const resolveImageUrl = (url: string): string => {
-    if (!url) return "/placeholder.svg";
-    return url.startsWith("ipfs://") ? url.replace("ipfs://", "https://ipfs.io/ipfs/") : url;
-};
-
-const getInitials = (name: string): string => {
-    if (!name) return "?";
-    const parts = name.trim().split(/\s+/);
-    const initials = parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join("");
-    return initials || "?";
-};
-
-// Helper function to format timestamp
-const formatDateTime = (timestamp: number): string => {
-    return new Date(timestamp * 1000).toLocaleString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-};
-
-const formatDuration = (seconds: number | undefined): string => {
-    if (!seconds || seconds <= 0) return "<1m";
-    const days = Math.floor(seconds / 86_400);
-    const hours = Math.floor((seconds % 86_400) / 3_600);
-    const minutes = Math.floor((seconds % 3_600) / 60);
-    const parts: string[] = [];
-    if (days) parts.push(`${days}d`);
-    if (hours) parts.push(`${hours}h`);
-    if (!days && minutes) parts.push(`${minutes}m`);
-    return parts.join(" ") || "<1m";
-};
-
-// Helper function to get status badge
-const getStatusBadge = (status: Poll["status"]): JSX.Element => {
-    switch (status) {
-        case "active":
-            return <Badge className="bg-green-500 text-white">Active</Badge>;
-        case "upcoming":
-            return <Badge className="bg-blue-500 text-white">Upcoming</Badge>;
-        default:
-            return <Badge variant="outline" className="text-neutral-400">Ended</Badge>;
-    }
-};
 
 export const Result = () => {
     const { id } = useParams<{ id: string }>();
@@ -213,7 +165,8 @@ export const Result = () => {
     }, [candidates, tieVotes]);
 
     const topCandidate = candidates.length > 0 ? candidates[0] : null;
-    const showOutcomeBanner = Boolean(poll?.status === "ended" && topCandidate);
+    const hasVotes = poll?.totalVotes && poll.totalVotes > 0;
+    const showOutcomeBanner = Boolean(poll?.status === "ended" && topCandidate && hasVotes);
     const winnerVoteLabel = topCandidate
         ? `${topCandidate.votes.toLocaleString()} ${formatPlural(topCandidate.votes, "vote", "votes")}`
         : "";
@@ -448,7 +401,7 @@ export const Result = () => {
                                 </div>
                                 <div className="flex flex-col gap-6 md:flex-row md:justify-between">
                                     <div>
-                                        <h1 className="text-3xl md:text-4xl font-bold font-lora mb-3 text-neutral-500 leading-tight">{poll.title}</h1>
+                                        <h1 className="text-3xl md:text-4xl font-bold font-lora mb-3 text-white leading-tight">{poll.title}</h1>
                                         <p className="text-neutral-300 mb-4 max-w-3xl leading-relaxed">{poll.description}</p>
                                         <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-300">
                                             {getStatusBadge(poll.status)}
@@ -513,7 +466,7 @@ export const Result = () => {
                         </div>
 
                         {/* Poll Timeline */}
-                        <Card className="mb-8 border-white/10 bg-white/\[0.04\] text-white rounded-2xl backdrop-blur">
+                        <Card className="mb-8 border-white/10 bg-white/[0.04] text-white rounded-2xl backdrop-blur">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 font-lora">
                                     <Calendar className="h-5 w-5" />
@@ -573,13 +526,13 @@ export const Result = () => {
                                 <TabsTrigger value="analytics" className="w-full rounded-xl px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
                                     Analytics
                                 </TabsTrigger>
-                                <TabsTrigger value="verification" className="w-full rounded-xl mt-3 sm:mt-0 px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
+                                <TabsTrigger value="verification" className="w-full rounded-xl px-4 py-2 text-sm text-center text-neutral-300 transition data-[state=active]:bg-primary/25 data-[state=active]:text-white sm:w-auto">
                                     Verification
                                 </TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="overview" className="space-y-6">
-                                <Card className="border-white/10 bg-white/\[0.04\] text-white rounded-2xl">
+                                <Card className="border-white/10 bg-white/[0.04] text-white rounded-2xl">
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 font-lora">
                                             <FileBarChart className="h-5 w-5" />
@@ -635,7 +588,7 @@ export const Result = () => {
                                                             `}
                                                     >
                                                         <div className="flex items-center gap-4 mb-3">
-                                                            <Avatar className="h-12 w-12 border border-white/10/60 bg-white/[0.02]/60 backdrop-blur">
+                                                            <Avatar className="h-12 w-12 border border-white/10 bg-white/[0.02] backdrop-blur">
                                                                 <AvatarImage src={resolveImageUrl(candidate.imageUrl)} alt={candidate.name} className="object-cover" />
                                                                 <AvatarFallback className="text-sm font-semibold text-white bg-white/15">
                                                                     {getInitials(candidate.name)}
@@ -680,7 +633,7 @@ export const Result = () => {
 
                             <TabsContent value="analytics" className="space-y-6">
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                                    <Card className="border-white/10 bg-white/\[0.04\] text-white rounded-2xl">
+                                    <Card className="border-white/10 bg-white/[0.04] text-white rounded-2xl">
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 font-lora">
                                                 <TrendingUp className="h-5 w-5" />
@@ -752,7 +705,7 @@ export const Result = () => {
                                             )}
                                         </CardContent>
                                     </Card>
-                                    <Card className="border-white/10 bg-white/\[0.04\] text-white rounded-2xl">
+                                    <Card className="border-white/10 bg-white/[0.04] text-white rounded-2xl">
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 font-lora">
                                                 <FileBarChart className="h-5 w-5" />
@@ -792,7 +745,7 @@ export const Result = () => {
                                         </CardContent>
                                     </Card>
                                     {barChartData.length > 0 && (
-                                        <Card className="border-white/10 bg-white/\[0.04\] text-white rounded-2xl xl:col-span-2">
+                                        <Card className="border-white/10 bg-white/[0.04] text-white rounded-2xl xl:col-span-2">
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2 font-lora">
                                                     <FileBarChart className="h-5 w-5" />
